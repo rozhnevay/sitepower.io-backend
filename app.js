@@ -12,6 +12,8 @@ const passport = require('passport')
 
 // getting the local authentication type
 const LocalStrategy = require('passport-local').Strategy
+const db = require('./queries');
+const bcrypt = require('bcryptjs');
 
 app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
@@ -21,27 +23,13 @@ app.use(express.static(publicRoot))
 app.use(bodyParser.json())
 
 app.use(cookieSession({
-  name: 'mysession',
-  keys: ['vueauthrandomkey'],
+  name: 'account.sitepower.io',
+  keys: ['sitepower'],
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}))
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
-let users = [
-  {
-    id: 1,
-    name: "Jude",
-    email: "user@email.com",
-    password: "password"
-  },
-  {
-    id: 2,
-    name: "Emma",
-    email: "emma@email.com",
-    password: "password2"
-  }
-]
 
 app.post("/api/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
@@ -76,49 +64,38 @@ const authMiddleware = (req, res, next) => {
 }
 
 app.get("/api/user", authMiddleware, (req, res) => {
-  let user = users.find(user => {
-    return user.id === req.session.passport.user
-  })
-
-  console.log([user, req.session])
-
-  res.send({ user: user })
+  db.getUserById(req.session.passport.user).then(user => res.send({ user: user }));
 })
-
-
 
 passport.use(
     new LocalStrategy(
-        {
-          usernameField: "email",
-          passwordField: "password"
-        },
+        {usernameField: "email",passwordField: "password"},
+        (username, password, done) => db.getUserByLogin(username).then(user => {
+                    bcrypt.compare(password, user.pass, (err, res) => {
+                        if (err) return done(null, false, {message: err.toString()})
 
-        (username, password, done) => {
-          let user = users.find((user) => {
-            return user.email === username && user.password === password
-          })
-
-          if (user) {
-            done(null, user)
-          } else {
-            done(null, false, { message: 'Incorrect username or password'})
-          }
-        }
+                        if (res === false)
+                            return done(null, false, {message: 'Incorrect username or password'})
+                        else
+                            return done(null, user);
+                    })
+                }
+            )
+            .catch(err => done(null, false, {message: 'Incorrect username or password'}))
     )
-)
+);
 
-passport.serializeUser((user, done) => {
-  done(null, user.id)
-})
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser((id, done) => db.getUserById(id).then(user => done(null, user)));
 
-passport.deserializeUser((id, done) => {
-  let user = users.find((user) => {
-    return user.id === id
-  })
+app.post('/api/register', function(req, res, next) {
+    bcrypt.genSalt(10, function(err, salt) {
+    if (err) return next(err);
+    bcrypt.hash(req.body.password, salt, function(err, hash) {
+        if (err) return next(err);
+        db.createUser(req.body.email, hash, req.body.name).then(() => res.send('Success')).catch((err) => res.send(err.toString()));
+    });
+  });
+});
 
-  done(null, user)
-})
-app.listen(3000, () => {
-  console.log("Example app listening on port 3000")
-})
+app.listen(3000, () => console.log("App listening on port 3000"))
