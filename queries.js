@@ -23,5 +23,5 @@ function getUserById(id) {
 }
 
 function createUser(login, pass, name) {
-    return db.none('insert into t_user(login, pass, name) values($1, $2, $3)', [login, pass, name]);
+    return db.one('insert into t_user(login, pass, name) values($1, $2, $3) returning id', [login, pass, name]);
 }

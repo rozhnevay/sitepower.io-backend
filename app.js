@@ -42,7 +42,7 @@ app.post("/api/login", (req, res, next) => {
     }
 
     req.login(user, err => {
-      res.send("Logged in");
+      res.send(user);
     });
   })(req, res, next);
 });
@@ -93,7 +93,12 @@ app.post('/api/register', function(req, res, next) {
     if (err) return next(err);
     bcrypt.hash(req.body.password, salt, function(err, hash) {
         if (err) return next(err);
-        db.createUser(req.body.email, hash, req.body.name).then(() => res.send('Success')).catch((err) => res.send(err.toString()));
+        db.createUser(req.body.email, hash, req.body.name).then((data) => {
+            console.log(data.id);
+            db.getUserById(data.id).then((user) => {
+                req.login(user, err => res.send(user));
+            }).catch((err) => res.send(err.toString()))
+        }).catch((err) => res.send(err.toString()));
     });
   });
 });
