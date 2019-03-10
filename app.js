@@ -19,6 +19,7 @@ app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 })
 
+/* [begin] Auth API*/
 app.use(express.static(publicRoot))
 app.use(bodyParser.json())
 
@@ -102,5 +103,18 @@ app.post('/api/register', function(req, res, next) {
     });
   });
 });
+/* [end] Auth API*/
+/* [begin] Forms API*/
+app.get("/api/forms", authMiddleware, (req, res) => {
+    db.getFormsByUserId(req.session.passport.user).then(forms => res.send(forms)).catch((err) => res.send(err.toString()));
+})
 
+app.get("/api/form", authMiddleware, (req, res) => {
+    db.getFormsById(req.id).then(form => res.send(form)).catch((err) => res.send(err.toString()));
+})
+
+app.post("/api/form", authMiddleware, (req, res) => {
+    db.createForm(req.session.passport.user, req.body.origin, req.body.form).then(id => res.send(id)).catch((err) => res.send(err.toString()));
+})
+/* [end] Forms API*/
 app.listen(3000, () => console.log("App listening on port 3000"))

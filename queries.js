@@ -11,7 +11,10 @@ var db = pgp(connectionString);
 module.exports = {
     getUserByLogin: getUserByLogin,
     getUserById: getUserById,
-    createUser: createUser
+    createUser: createUser,
+    getFormsByUserId: getFormsByUserId,
+    getFormById: getFormById,
+    createForm: createForm
 };
 
 function getUserByLogin(login) {
@@ -24,4 +27,16 @@ function getUserById(id) {
 
 function createUser(login, pass, name) {
     return db.one('insert into t_user(login, pass, name) values($1, $2, $3) returning id', [login, pass, name]);
+}
+
+function getFormsByUserId(user_id) {
+    return db.any('select * from t_form where user_id = $1', user_id);
+}
+
+function getFormById(id) {
+    return db.one('select * from t_form where id = $1', id);
+}
+
+function createForm(user_id, origin, form) {
+    return db.one('insert into t_form(user_id, origin, form) values($1, $2, $3) returning id', [user_id, origin, form]);
 }
