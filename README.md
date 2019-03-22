@@ -16,7 +16,7 @@ found. There are input controls: **`Email`**, **`Pass`**. Buttons: **`Continue`*
 On **`Continue`** user authorizes, browser cookie set's on 24h
 On **`Register`** user put email and pass, and new user creates in db, user authorizes, browser cookie set's on 24h
  
-**`Chat Page`** - main page of application. There are two panels: left - list of **`conversations`** and right - active dialog.
+**`Chat Page`** - main page of application. There are two panels: left - list of **`conversations`** and right - **`active dialog`**.
 
 **`Designer Page`** - here **`Customer`** can take their js to put on his own site.
 
