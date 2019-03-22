@@ -22,6 +22,6 @@ On **`Register`** user put email and pass, and new user creates in db, user auth
 
  **Widget**:
  
- JS code, that executes on **`Customer`** site, when **`Customer client`** enter it. This code position **`Chat-minimized`** button
- on the left bottom with fixed position, on click  **`Chat-full`** window opens and **`Customer client`** doing a conversation with a **`Customer`**.
+ JS code, that executes on **`Customer`** site, when **`Customer client`** comes to it. This code positions **`Chat-minimized`** button
+ on the left bottom with fixed position, on click  **`Chat-full`** chat window opens and **`Customer client`** doing a conversation with a **`Customer`**.
  After first message, new **`conversation`** creating and become visible in a **`Customer`** **`Chat Page`**. 
