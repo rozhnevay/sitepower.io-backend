@@ -20,14 +20,28 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
-
+var io = require('socket.io').listen(server);
 /**
  * Listen on provided port, on all network interfaces.
  */
 
+
+
 server.listen(port);
+io.on('connection', function(socket){
+  console.log('a user connected');
+  console.log("client:" + socket.client.id);
+  console.log("user:" + socket.userId);
+  io.emit("connected", socket.client.id);
+  socket.on('send', function(msg){
+    console.log('send: ' + msg);
+    io.emit("receive", "Echo!")
+  });
+});
 server.on('error', onError);
 server.on('listening', onListening);
+
+
 
 /**
  * Normalize a port into a number, string, or false.

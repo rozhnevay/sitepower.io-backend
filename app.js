@@ -2,10 +2,12 @@
 
 const publicRoot = 'C:\\Users\\User\\sitepower.io\\dist'
 
-const express = require('express')
+
+const express = require('express');
 
 // creating an express instance
-const app = express()
+const app = express();
+
 const cookieSession = require('cookie-session')
 const bodyParser = require('body-parser')
 const passport = require('passport')
@@ -117,4 +119,8 @@ app.post("/api/form", authMiddleware, (req, res) => {
     db.createForm(req.session.passport.user, req.body.origin, req.body.form).then(id => res.send(id)).catch((err) => res.send(err.toString()));
 })
 /* [end] Forms API*/
-app.listen(3000, () => console.log("App listening on port 3000"))
+
+//app.listen(3000, () => console.log("App listening on port 3000"))
+
+module.exports = app;
+
