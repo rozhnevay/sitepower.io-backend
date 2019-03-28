@@ -14,7 +14,8 @@ module.exports = {
     createUser: createUser,
     getFormsByUserId: getFormsByUserId,
     getFormById: getFormById,
-    createForm: createForm
+    createForm: createForm,
+    updateUserPassword: updateUserPassword
 };
 
 function getUserByLogin(login) {
@@ -27,6 +28,10 @@ function getUserById(id) {
 
 function createUser(login, pass, name) {
     return db.one('insert into t_user(login, pass, name) values($1, $2, $3) returning id', [login, pass, name]);
+}
+
+function updateUserPassword(user_id, pass) {
+    return db.one('update t_user set pass = $1 where id = $2', [pass, user_id]);
 }
 
 function getFormsByUserId(user_id) {

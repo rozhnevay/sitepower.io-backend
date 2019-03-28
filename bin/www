@@ -28,6 +28,16 @@ var io = require('socket.io').listen(server);
 
 
 server.listen(port);
+io.use((socket, next) => {
+  let token = socket.handshake.query.token;
+  console.log("token " + token);
+  if (token == "client" || token == "main") {
+    return next();
+  }
+  console.log("token2 ");
+  return next(new Error('authentication error'));
+});
+
 io.on('connection', function(socket){
   console.log('a user connected');
   console.log("client:" + socket.client.id);
@@ -35,7 +45,7 @@ io.on('connection', function(socket){
   io.emit("connected", socket.client.id);
   socket.on('send', function(msg){
     console.log('send: ' + msg);
-    io.emit("receive", "Echo!")
+    io.emit("receive", msg)
   });
 });
 server.on('error', onError);
