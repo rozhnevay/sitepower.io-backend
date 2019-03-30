@@ -197,6 +197,16 @@ app.post("/api/form", authMiddleware, (req, res) => {
     db.createForm(req.session.passport.user, req.body.origin, req.body.form).then(id => res.send(id)).catch((err) => res.send(err.toString()));
 })
 /* [end] Forms API*/
+/* [begin] Chat API*/
+app.get("/api/chats", authMiddleware, (req, res) => {
+    db.getChatsByUserId(req.session.passport.user).then(chats => res.send(chats)).catch((err) => res.send(err.toString()));
+})
+app.get("/api/chat/:id", authMiddleware, (req, res) => {
+    console.log("chat")
+    console.log(req.params.id)
+    db.getChatBodyById(req.params.id).then(chat => res.send(chat)).catch((err) => res.send(err.toString()));
+})
+/* [end] Chat API*/
 
 //app.listen(3000, () => console.log("App listening on port 3000"))
 

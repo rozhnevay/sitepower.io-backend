@@ -24,25 +24,44 @@ var io = require('socket.io').listen(server);
 /**
  * Listen on provided port, on all network interfaces.
  */
+var sessionStore     = require('awesomeSessionStore'); // find a working session store (have a look at the readme)
+var passportSocketIo = require("passport.socketio");
 
 
 
 server.listen(port);
+io.use(passportSocketIo.authorize({
+  cookieParser: require('cookie-parser'),       // the same middleware you registrer in express
+  key:          'express.sid',       // the name of the cookie where express/connect stores its session_id
+  secret:       'session_secret',    // the session_secret to parse the cookie
+  store:        sessionStore,        // we NEED to use a sessionstore. no memorystore please
+  success:      onAuthorizeSuccess,  // *optional* callback on success - read more below
+  fail:         onAuthorizeFail,     // *optional* callback on fail/error - read more below
+}));
+
+/*
 io.use((socket, next) => {
   let token = socket.handshake.query.token;
   console.log("token " + token);
+  if (token == "main") {
+
+  }
+
+
   if (token == "client" || token == "main") {
     return next();
   }
   console.log("token2 ");
+
   return next(new Error('authentication error'));
 });
-
+*/
 io.on('connection', function(socket){
   console.log('a user connected');
   console.log("client:" + socket.client.id);
   console.log("user:" + socket.userId);
   io.emit("connected", socket.client.id);
+  updateUserChatId()
   socket.on('send', function(msg){
     console.log('send: ' + msg);
     io.emit("receive", msg)

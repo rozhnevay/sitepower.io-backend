@@ -15,7 +15,10 @@ module.exports = {
     getFormsByUserId: getFormsByUserId,
     getFormById: getFormById,
     createForm: createForm,
-    updateUserPassword: updateUserPassword
+    updateUserPassword: updateUserPassword,
+    getChatsByUserId:getChatsByUserId,
+    getChatBodyById:getChatBodyById,
+    updateUserChatId:updateUserChatId
 };
 
 function getUserByLogin(login) {
@@ -34,6 +37,10 @@ function updateUserPassword(user_id, pass) {
     return db.one('update t_user set pass = $1 where id = $2', [pass, user_id]);
 }
 
+function updateUserChatId(user_id, chat_id) {
+    return db.one('update t_user set chat_id = $1 where id = $2', [chat_id, user_id]);
+}
+
 function getFormsByUserId(user_id) {
     return db.any('select * from t_form where user_id = $1', user_id);
 }
@@ -44,4 +51,12 @@ function getFormById(id) {
 
 function createForm(user_id, origin, form) {
     return db.one('insert into t_form(user_id, origin, form) values($1, $2, $3) returning id', [user_id, origin, form]);
+}
+
+function getChatsByUserId(user_id) {
+    return db.any('select id, created, login from t_prospect where user_id = $1', user_id);
+}
+
+function getChatBodyById(id) {
+    return db.one('select chat from t_prospect where id = $1', id);
 }
