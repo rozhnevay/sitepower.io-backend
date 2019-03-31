@@ -37,7 +37,7 @@ var store = new redisStore({url:process.env.REDIS_URL})
 io.use(passportSocketIo.authorize({
   passport:     app.passport,
   secret:       process.env.SECRET,
-  key:          'sitepower.sid',       // the name of the cookie where express/connect stores its session_id
+  key:          'sitepower.sid.' + process.env.APP_MODE,       // the name of the cookie where express/connect stores its session_id
   store:        store,        // we NEED to use a sessionstore. no memorystore please
   success:      onAuthorizeSuccess,  // *optional* callback on success - read more below
   fail:         onAuthorizeFail,     // *optional* callback on fail/error - read more below
