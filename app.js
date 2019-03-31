@@ -2,7 +2,6 @@
 
 const publicRoot = './dist'
 
-const host = "localhost:8080";
 const express = require('express');
 const nodemailer = require('nodemailer');
 
@@ -159,7 +158,7 @@ const sendResetLink = user => {
 app.get('/api/resetpassword/:id/:token', function(req, res) {
     db.getUserById(req.params.id).then((user) => {
         const payload = jwt.decode(req.params.token, user.pass + "-" + user.created.getTime());
-        res.send('<form action="http://localhost:3000/api/resetpassword" method="POST">' +
+        res.send('<form action="http://' + process.env.HOST + '/api/resetpassword" method="POST">' +
             '<input type="hidden" name="id" value="' + payload.id + '" />' +
             '<input type="hidden" name="token" value="' + req.params.token + '" />' +
             '<input type="password" name="password" value="" placeholder="Enter your new password..." />' +
