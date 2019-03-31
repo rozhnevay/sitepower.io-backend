@@ -24,7 +24,7 @@ app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 })
 require('dotenv').config()
-var sessionStore = new redisStore();
+var sessionStore = new redisStore({url:process.env.REDIS_URL});
 
 /* [begin] Auth API*/
 app.use(express.static(publicRoot))

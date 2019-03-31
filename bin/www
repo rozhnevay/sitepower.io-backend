@@ -33,7 +33,7 @@ var passportSocketIo = require("passport.socketio");
 
 
 server.listen(port);
-var store = new redisStore()
+var store = new redisStore({url:process.env.REDIS_URL})
 io.use(passportSocketIo.authorize({
   passport:     app.passport,
   secret:       process.env.SECRET,

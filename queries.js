@@ -6,7 +6,7 @@ var options = {
 var pgp = require('pg-promise')(options);
 
 require('dotenv').config()
-var connectionString = 'postgres://'+process.env.DATABASE_URL;
+var connectionString = process.env.DATABASE_URL;
 
 var db = pgp({connectionString});
 
