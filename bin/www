@@ -33,11 +33,16 @@ var passportSocketIo = require("passport.socketio");
 
 
 server.listen(port);
+
+server.on('error', onError);
+server.on('listening', onListening);
+
+
 var store = new redisStore({url:process.env.REDIS_URL})
 io.use(passportSocketIo.authorize({
   passport:     app.passport,
   secret:       process.env.SECRET,
-  key:          'sitepower.sid',       // the name of the cookie where express/connect stores its session_id
+  key:          'sitepower.sid.' + process.env.APP_MODE,       // the name of the cookie where express/connect stores its session_id
   store:        store,        // we NEED to use a sessionstore. no memorystore please
   success:      onAuthorizeSuccess,  // *optional* callback on success - read more below
   fail:         onAuthorizeFail,     // *optional* callback on fail/error - read more below
@@ -49,8 +54,8 @@ function onAuthorizeSuccess(data, accept){
 }
 
 function onAuthorizeFail(data, message, error, accept){
-  if(error)
-    throw new Error(message);
+  //if(error)
+  //  throw new Error(message);
   console.log('failed connection to socket.io:', message);
   accept(null, false);
 }
@@ -103,9 +108,6 @@ io.on('connection', function(socket){
     io.to(directChatId).emit("receive", msg)
   });
 });
-server.on('error', onError);
-server.on('listening', onListening);
-
 
 
 /**
