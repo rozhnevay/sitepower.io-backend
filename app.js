@@ -34,7 +34,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(session({
   store: sessionStore,
   secret: process.env.SECRET,
-  key: 'sitepower.sid.' + process.env.APP_MODE,
+  key: 'sitepower.sid',
   resave: false,
   saveUninitialized: true,
   cookie: {
