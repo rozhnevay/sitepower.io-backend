@@ -3,10 +3,12 @@ var options = {
     // Initialization Options
     promiseLib: promise
 };
-
 var pgp = require('pg-promise')(options);
-var connectionString = 'postgres://postgres:postgres@localhost:5432/postgres';
-var db = pgp(connectionString);
+
+require('dotenv').config()
+var connectionString = 'postgres://'+process.env.DATABASE_URL;
+
+var db = pgp({connectionString});
 
 module.exports = {
     getUserByLogin: getUserByLogin,
