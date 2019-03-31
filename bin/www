@@ -4,10 +4,11 @@
  * Module dependencies.
  */
 
-var app = require('../app');
+
+var db = require('../queries');
 var debug = require('debug')('sitepower.io-backend:server');
 var http = require('http');
-
+var app = require('../app');
 /**
  * Get port from environment and store in Express.
  */
@@ -21,50 +22,85 @@ app.set('port', port);
 
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
+
 /**
  * Listen on provided port, on all network interfaces.
  */
-var sessionStore     = require('awesomeSessionStore'); // find a working session store (have a look at the readme)
+const session = require('express-session');
+const redisStore = require('connect-redis')(session);
 var passportSocketIo = require("passport.socketio");
 
 
 
 server.listen(port);
+var store = new redisStore()
 io.use(passportSocketIo.authorize({
-  cookieParser: require('cookie-parser'),       // the same middleware you registrer in express
-  key:          'express.sid',       // the name of the cookie where express/connect stores its session_id
-  secret:       'session_secret',    // the session_secret to parse the cookie
-  store:        sessionStore,        // we NEED to use a sessionstore. no memorystore please
+  passport:     app.passport,
+  secret:       'qwertytrewq',
+  key:          'sitepower.sid',       // the name of the cookie where express/connect stores its session_id
+  store:        store,        // we NEED to use a sessionstore. no memorystore please
   success:      onAuthorizeSuccess,  // *optional* callback on success - read more below
   fail:         onAuthorizeFail,     // *optional* callback on fail/error - read more below
 }));
 
-/*
-io.use((socket, next) => {
-  let token = socket.handshake.query.token;
-  console.log("token " + token);
-  if (token == "main") {
+function onAuthorizeSuccess(data, accept){
+  console.log('successful connection to socket.io');
+  accept();
+}
 
+function onAuthorizeFail(data, message, error, accept){
+  if(error)
+    throw new Error(message);
+  console.log('failed connection to socket.io:', message);
+  accept(null, false);
+}
+
+let userChats = {};
+let prospectChats = {};
+
+io.on('connect', function (socket) {
+  //console.log("user:" + socket.request.user.id);
+  //console.log("client:" + socket.client.id);
+  //console.log("token = " + socket.handshake.query.token);
+
+  if (socket.request.user.id) {
+    console.log("user");
+    //db.updateUserChatId(socket.request.user.id, socket.client.id).then(res => console.log(success)).catch(err => err);
+    userChats[socket.request.user.sitepower_id] = socket.client.id;
+  } else if (socket.handshake.query.sitepower_id) {
+    console.log("1");
+    prospectChats[socket.handshake.query.sitepower_id] = socket.client.id;
+    /*db.updateProspectChatId(socket.handshake.query.sitepower_id, socket.client.id).then(
+        (res) => db.getProspectUserBySPId(socket.handshake.query.sitepower_id).then(
+            res => db.getChatIdByUserId(res.user_id).then (
+                res => socket.direction = res
+            ).catch(err => console.log(err))
+         ).catch(err => console.log(err))
+    ).catch(err => console.log(err));*/
   }
+})
 
-
-  if (token == "client" || token == "main") {
-    return next();
-  }
-  console.log("token2 ");
-
-  return next(new Error('authentication error'));
-});
-*/
 io.on('connection', function(socket){
-  console.log('a user connected');
-  console.log("client:" + socket.client.id);
-  console.log("user:" + socket.userId);
-  io.emit("connected", socket.client.id);
-  updateUserChatId()
+  console.log("direction = " + socket.direction);
+
+
   socket.on('send', function(msg){
-    console.log('send: ' + msg);
-    io.emit("receive", msg)
+    console.log("{SEND} [recepient_id = " + msg.recepient_id +"] [direction = " + msg.direction + "]");
+    console.log("prospectChats");
+    console.log(prospectChats);
+    console.log("userChats");
+    console.log(userChats);
+    if (msg.direction == "from_user"){
+      directChatId = prospectChats[msg.recepient_id];
+    } else {
+      directChatId = userChats[msg.recepient_id];
+    }
+    console.log("directChatId = " + directChatId);
+    //console.log("io.clients");
+    //console.log(io.clients);
+    //io.clients[directChatId].send(msg);
+    //io.emit("receive", msg)
+    io.to(directChatId).emit("receive", msg)
   });
 });
 server.on('error', onError);

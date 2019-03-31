@@ -10,7 +10,8 @@ const nodemailer = require('nodemailer');
 const app = express();
 const jwt = require('jwt-simple');
 
-const cookieSession = require('cookie-session')
+const session = require('express-session');
+const redisStore = require('connect-redis') (session);
 const bodyParser = require('body-parser')
 const passport = require('passport')
 
@@ -22,20 +23,34 @@ const bcrypt = require('bcryptjs');
 app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 })
-
+var sessionStore = new redisStore();
 /* [begin] Auth API*/
 app.use(express.static(publicRoot))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 
-app.use(cookieSession({
-  name: 'account.sitepower.io',
-  keys: ['sitepower'],
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+app.use(session({
+  store: sessionStore,
+  secret: 'qwertytrewq',
+  key: 'sitepower.sid',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+        path: '/',
+        httpOnly: true,
+        secure: false,
+        maxAge: 100 * 60 * 1000
+    },
+  rolling: true
+  // 24 hours
 }));
 app.use(passport.initialize());
 app.use(passport.session());
-
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
 
 app.post("/api/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
@@ -50,6 +65,7 @@ app.post("/api/login", (req, res, next) => {
     req.login(user, err => {
       res.send(user);
     });
+
   })(req, res, next);
 });
 
@@ -204,8 +220,19 @@ app.get("/api/chats", authMiddleware, (req, res) => {
 app.get("/api/chat/:id", authMiddleware, (req, res) => {
     console.log("chat")
     console.log(req.params.id)
-    db.getChatBodyById(req.params.id).then(chat => res.send(chat)).catch((err) => res.send(err.toString()));
+    db.getChatBodyBySpId(req.params.id).then(chat => res.send(chat)).catch((err) => res.send(err.toString()));
 })
+
+/* TODO!!! Продумать проверку на Origin и ограничение на кол-во запросов в день (не больше тысчяи)*/
+app.get("/api/prospect/:id", (req, res) => {
+    db.getUserBySPId(req.params.id).then(
+        user => db.createProspect(user.id).then(
+            prospect => res.send({sitepower_id: prospect.sitepower_id, recepient_id:  user.sitepower_id})
+        )
+    );
+
+})
+
 /* [end] Chat API*/
 
 //app.listen(3000, () => console.log("App listening on port 3000"))
