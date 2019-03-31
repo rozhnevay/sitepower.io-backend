@@ -1,6 +1,6 @@
 
 
-const publicRoot = 'C:\\Users\\User\\sitepower.io\\dist'
+const publicRoot = './dist'
 
 const host = "localhost:8080";
 const express = require('express');
@@ -23,7 +23,9 @@ const bcrypt = require('bcryptjs');
 app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 })
+require('dotenv').config()
 var sessionStore = new redisStore();
+
 /* [begin] Auth API*/
 app.use(express.static(publicRoot))
 app.use(bodyParser.json())
@@ -31,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 
 app.use(session({
   store: sessionStore,
-  secret: 'qwertytrewq',
+  secret: process.env.SECRET,
   key: 'sitepower.sid',
   resave: false,
   saveUninitialized: true,
@@ -135,8 +137,8 @@ const sendResetLink = user => {
     var transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: 'sitepower.io@gmail.com',
-            pass: 'Qwerty123@'
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS
         }
     });
 
