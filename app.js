@@ -43,7 +43,6 @@ app.use(session({
         maxAge: 100 * 60 * 1000
     },
   rolling: true
-  // 24 hours
 }));
 app.use(passport.initialize());
 app.use(passport.session());

@@ -25,7 +25,8 @@ module.exports = {
     createProspect:createProspect,
     updateProspectChatId:updateProspectChatId,
     getProspectUserBySPId:getProspectUserBySPId,
-    getChatIdByUserId:getChatIdByUserId
+    getChatIdByUserId:getChatIdByUserId,
+    updateProspectChat:updateProspectChat
 };
 
 function getUserByLogin(login) {
@@ -62,7 +63,7 @@ function createForm(user_id, origin, form) {
 }
 
 function getChatsByUserId(user_id) {
-    return db.any('select id, created, login, sitepower_id from t_prospect where user_id = $1', user_id);
+    return db.any('select * from t_prospect where user_id = $1', user_id);
 }
 
 function getChatBodyBySpId(id) {
@@ -80,6 +81,10 @@ function createProspect(user_id) {
 function updateProspectChatId(sitepower_id, chat_id) {
     console.log("updateProspectChatId [sitepower_id = " + sitepower_id + "] [chat_id = " + chat_id + "]");
     return db.none('update t_prospect set chat_id = $1 where sitepower_id = $2', [chat_id, sitepower_id]);
+}
+function updateProspectChat(sitepower_id, chat) {
+    console.log("updateProspectChat [sitepower_id = " + sitepower_id + "] [chat = " + chat + "]");
+    return db.none('update t_prospect set chat = $1 where sitepower_id = $2', [chat, sitepower_id]);
 }
 
 function getProspectUserBySPId(sitepower_id) {
