@@ -64,24 +64,10 @@ let userChats = {};
 let prospectChats = {};
 
 io.on('connect', function (socket) {
-  //console.log("user:" + socket.request.user.id);
-  //console.log("client:" + socket.client.id);
-  //console.log("token = " + socket.handshake.query.token);
-
   if (socket.request.user.id) {
-    console.log("user");
-    //db.updateUserChatId(socket.request.user.id, socket.client.id).then(res => console.log(success)).catch(err => err);
     userChats[socket.request.user.sitepower_id] = socket.client.id;
   } else if (socket.handshake.query.sitepower_id) {
-    console.log("1");
     prospectChats[socket.handshake.query.sitepower_id] = socket.client.id;
-    /*db.updateProspectChatId(socket.handshake.query.sitepower_id, socket.client.id).then(
-        (res) => db.getProspectUserBySPId(socket.handshake.query.sitepower_id).then(
-            res => db.getChatIdByUserId(res.user_id).then (
-                res => socket.direction = res
-            ).catch(err => console.log(err))
-         ).catch(err => console.log(err))
-    ).catch(err => console.log(err));*/
   }
 })
 
@@ -101,10 +87,6 @@ io.on('connection', function(socket){
       directChatId = userChats[msg.recepient_id];
     }
     console.log("directChatId = " + directChatId);
-    //console.log("io.clients");
-    //console.log(io.clients);
-    //io.clients[directChatId].send(msg);
-    //io.emit("receive", msg)
     io.to(directChatId).emit("receive", msg)
   });
 });

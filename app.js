@@ -133,20 +133,19 @@ const sendResetLink = user => {
     }
     const secret = user.pass + "-" + user.created.getTime();
     const token = jwt.encode(payload, secret);
-    console.log("http://" + host + "/resetpassword/" + payload.id + "/" + token);
     var transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: process.env.MAILGUN_SMTP_SERVER,
         auth: {
-            user: process.env.MAIL_USER,
-            pass: process.env.MAIL_PASS
+            user: process.env.MAILGUN_SMTP_LOGIN,
+            pass: process.env.MAILGUN_SMTP_PASSWORD
         }
     });
 
     var mailOptions = {
-        from: 'sitepower.io@gmail.com',
+        from: process.env.MAILGUN_SMTP_LOGIN,
         to: payload.email,
         subject: 'sitepower.io: Password Reset',
-        text: "<h1>Welcome</h1><p>" + "http://" + host + "/api/resetpassword/" + payload.id + "/" + token + "</p>"
+        text: "<h1>Welcome</h1><p>" + "http://" + process.env.HOST + "/api/resetpassword/" + payload.id + "/" + token + "</p>"
     };
 
     transporter.sendMail(mailOptions, function(error, info){
