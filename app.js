@@ -10,6 +10,8 @@ const session = require('express-session');
 const redisStore = require('connect-redis') (session);
 const bodyParser = require('body-parser')
 const passport = require('passport')
+const rateLimit = require("express-rate-limit");
+app.enable("trust proxy");
 
 const LocalStrategy = require('passport-local').Strategy
 const db = require('./queries');
@@ -21,7 +23,7 @@ app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 })
 
-
+/* Widget Send*/
 const fs = require('fs');
 fs.readFile(widgetRoot+"/"+"widget.js", (err, data) => {
     if (err) debug("{WIDGET}", err.message)
@@ -31,6 +33,14 @@ fs.readFile(widgetRoot+"/"+"widget.js", (err, data) => {
         })
     }
 })
+
+/* anti - ddos */
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 60 // limit each IP to 10 requests per windowMs
+});
+app.use("/api/", limiter);
+
 
 const sessionStore = new redisStore({url:process.env.REDIS_URL});
 app.use(session({
@@ -87,7 +97,7 @@ passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) => db.getUserById(id).then(user => done(null, {id:user.id, login:user.login, name:user.name, created:user.created, sitepower_id:user.sitepower_id})));
 
 
-require('./api-auth')(app, authMiddleware, passport); // Auth API
+require('./api-auth')(app, authMiddleware, passport, rateLimit); // Auth API
 require('./api-forms')(app, authMiddleware); // Forms API
 
 require('./api-upload')(app, authMiddleware); // Upload

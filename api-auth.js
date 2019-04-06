@@ -4,6 +4,7 @@ const jwt = require('jwt-simple');
 const bcrypt = require('bcryptjs');
 
 module.exports = function (app, authMiddleware, passport) {
+
     app.post("/api/login", (req, res, next) => {
         passport.authenticate("local", (err, user, info) => {
             if (err) {
