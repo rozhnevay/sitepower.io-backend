@@ -67,7 +67,7 @@ module.exports = function (app, authMiddleware, passport) {
             from: process.env.MAILGUN_SMTP_LOGIN,
             to: payload.email,
             subject: 'sitepower.io: Password Reset',
-            text: "<h1>Welcome</h1><p>" + "http://" + process.env.HOST + "/api/resetpassword/" + payload.id + "/" + token + "</p>"
+            text: "<h1>Welcome</h1><p>" + "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token + "</p>"
         };
 
         transporter.sendMail(mailOptions, function(error, info){
@@ -82,7 +82,7 @@ module.exports = function (app, authMiddleware, passport) {
     app.get('/api/resetpassword/:id/:token', function(req, res) {
         db.getUserById(req.params.id).then((user) => {
             const payload = jwt.decode(req.params.token, user.pass + "-" + user.created.getTime());
-            res.send('<form action="http://' + process.env.HOST + '/api/resetpassword" method="POST">' +
+            res.send('<form action="http://' + process.env.DOMAIN + '/api/resetpassword" method="POST">' +
                 '<input type="hidden" name="id" value="' + payload.id + '" />' +
                 '<input type="hidden" name="token" value="' + req.params.token + '" />' +
                 '<input type="password" name="password" value="" placeholder="Enter your new password..." />' +

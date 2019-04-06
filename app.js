@@ -1,5 +1,6 @@
 
 const publicRoot = './dist'
+const widgetRoot = './widget'
 const express = require('express');
 const app = express();
 
@@ -20,6 +21,16 @@ app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 })
 
+
+const fs = require('fs');
+fs.readFile(widgetRoot+"/"+"widget.js", (err, data) => {
+    if (err) debug("{WIDGET}", err.message)
+    if (data) {
+        app.get("/widget/:id", (req, res, next) => {
+            res.send(data.toString().replace(/%%HOST%%/g, process.env.HOST).replace(/%%WIDGET_ID%%/g, req.params.id))
+        })
+    }
+})
 
 const sessionStore = new redisStore({url:process.env.REDIS_URL});
 app.use(session({

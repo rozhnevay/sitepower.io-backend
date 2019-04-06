@@ -139,7 +139,7 @@ module.exports = function (app, session, passport, mongodb) {
 
                 }
                 let recepient_id = senderType === "user" ? msg.recepient_id : sender.recepient_id;
-                debug("{SEND RECEPIENT}", ssender, recepient_id);
+                debug("{SEND TO RECEPIENT}", ssender, recepient_id);
                 if (!recepient_id) throw Error("Recipient not found!")
 
                 let prospect_id = senderType === "user" ? msg.recepient_id : socket.sitepower_id;
@@ -155,12 +155,13 @@ module.exports = function (app, session, passport, mongodb) {
                     if (err) debug("{SEND ERROR 2}", err.message);
                     let recepient = JSON.parse(value);
                     if (recepient) {
-                        io.to(recepient.chatId).emit("receive", msg);
+                        io.to(recepient.chat).emit("receive", msg);
                     }
 
                 })
                 /* 2 - себе же */
-                io.to(sender.chatId).emit("receive", msg);
+                debug("{SEND TO SENDER}", ssender, sender.chatId);
+                io.to(sender.chat).emit("receive", msg);
             })
         });
         socket.on('disconnect', function () {
