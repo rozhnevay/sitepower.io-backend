@@ -5,7 +5,6 @@
  */
 
 
-var db = require('../queries');
 var debug = require('debug')('sitepower.io-backend:server');
 var http = require('http');
 var app = require('../app');
@@ -21,93 +20,16 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
-var io = require('socket.io').listen(server,  {resource: '/socket.io'});
+
 
 /**
  * Listen on provided port, on all network interfaces.
  */
-const session = require('express-session');
-const redisStore = require('connect-redis')(session);
-var passportSocketIo = require("passport.socketio");
-
-
 
 server.listen(port);
 
 server.on('error', onError);
 server.on('listening', onListening);
-
-
-var store = new redisStore({url:process.env.REDIS_URL})
-io.use(passportSocketIo.authorize({
-  passport:     app.passport,
-  secret:       process.env.SECRET,
-  key:          'sitepower.sid.' + process.env.APP_MODE,       // the name of the cookie where express/connect stores its session_id
-  store:        store,        // we NEED to use a sessionstore. no memorystore please
-  success:      onAuthorizeSuccess,  // *optional* callback on success - read more below
-  fail:         onAuthorizeFail,     // *optional* callback on fail/error - read more below
-}));
-
-function onAuthorizeSuccess(data, accept){
-  console.log('successful connection to socket.io');
-  accept();
-}
-
-function onAuthorizeFail(data, message, error, accept){
-  //if(error)
-  //  throw new Error(message);
-  console.log('failed connection to socket.io:', message);
-  accept(null, false);
-}
-
-let userChats = {};
-let prospectChats = {};
-
-io.on('connect', function (socket) {
-  console.log("{CONNECT} [socket.handshake.query.sitepower_id = " + socket.handshake.query.sitepower_id + "] [socket.request.user.id = " + socket.request.user.id);
-
-  if (socket.handshake.query.sitepower_id) {
-    prospectChats[socket.handshake.query.sitepower_id] = socket.client.id;
-  } else if (socket.request.user.id) {
-    userChats[socket.request.user.sitepower_id] = socket.client.id;
-  }
-})
-
-io.on('connection', function(socket){
-  console.log("direction = " + socket.direction);
-
-
-  socket.on('send', function(msg){
-    console.log("{SEND} [recepient_id = " + msg.recepient_id +"] [direction = " + msg.direction + "]");
-    console.log("prospectChats");
-    console.log(prospectChats);
-    console.log("userChats");
-    console.log(userChats);
-    let chat;
-    if (msg.direction == "from_user"){
-      directChatId = prospectChats[msg.recepient_id];
-      updateChat(msg.recepient_id, msg);
-    } else {
-      directChatId = userChats[msg.recepient_id];
-      updateChat(socket.handshake.query.sitepower_id, msg);
-    }
-    console.log("directChatId = " + directChatId);
-    io.to(directChatId).emit("receive", msg);
-    io.to(socket.client.id).emit("receive", msg);
-  });
-});
-
-function updateChat(id, msg) {
-  db.getChatBodyBySpId(id).then(
-      chat => {
-        let chatObj = chat.chat;
-        chatObj = chatObj ? chatObj : {};
-        chatObj.messages = chatObj.messages ? chatObj.messages : [];
-        chatObj.messages.push(msg);
-        db.updateProspectChat(id, chatObj).then().catch(err => console.log(err))
-      }
-  ).catch(err => console.log(err))
-}
 
 /**
  * Normalize a port into a number, string, or false.

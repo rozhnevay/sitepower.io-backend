@@ -47,7 +47,7 @@
             connect(spId);
         }
         function connect(token) {
-            var socket = io('/?sitepower_id='+token);
+            var socket = io('http://localhost:3031/?sitepower_id='+token);
             $(".feedbackfull-b-send").on("click", function(event){
                 var msg = {};
                 msg.body = $(".feedbackfull-b-input textarea").val();

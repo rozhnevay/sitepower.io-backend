@@ -26,7 +26,10 @@ module.exports = {
     updateProspectChatId:updateProspectChatId,
     getProspectUserBySPId:getProspectUserBySPId,
     getChatIdByUserId:getChatIdByUserId,
-    updateProspectChat:updateProspectChat
+    updateProspectChat:updateProspectChat,
+    getFormByUserIdOrigin:getFormByUserIdOrigin,
+    uploadFile:uploadFile,
+    getFileByUUId:getFileByUUId
 };
 
 function getUserByLogin(login) {
@@ -52,6 +55,10 @@ function updateUserChatId(user_id, chat_id) {
 
 function getFormsByUserId(user_id) {
     return db.any('select * from t_form where user_id = $1', user_id);
+}
+
+function getFormByUserIdOrigin(user_id, origin) {
+    return db.one('select * from t_form where user_id = $1 and origin = $2', [user_id, origin]);
 }
 
 function getFormById(id) {
@@ -95,4 +102,14 @@ function getProspectUserBySPId(sitepower_id) {
 function getChatIdByUserId(user_id) {
     console.log("getChatIdByUserId [user_id = " + user_id + "]");
     return db.one('select chat_id from t_user where id = $1', user_id);
+}
+
+function uploadFile(key, filename) {
+    console.log("uploadFile");
+    return db.one('insert into t_file ("key", filename) values($1, $2) returning uuid', [key, filename]);
+}
+
+function getFileByUUId(uuid) {
+    console.log("uploadFile");
+    return db.one('select "key", filename from t_file where uuid=$1', uuid);
 }
