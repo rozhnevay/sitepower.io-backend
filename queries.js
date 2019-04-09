@@ -81,8 +81,8 @@ function getUserBySPId(sitepower_id) {
     return db.one('select * from t_user where sitepower_id = $1', sitepower_id);
 }
 
-function createProspect(user_id) {
-    return db.one('insert into t_prospect (user_id) values($1) returning sitepower_id', user_id);
+function createProspect(user_id, name) {
+    return db.one('insert into t_prospect (user_id, full_name) values($1, $2) returning sitepower_id', [user_id, name]);
 }
 
 function updateProspectChatId(sitepower_id, chat_id) {

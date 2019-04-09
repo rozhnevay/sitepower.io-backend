@@ -37,7 +37,7 @@ module.exports = function (app, authMiddleware, mongodb) {
         res.header("Access-Control-Allow-Origin", req.headers.origin);
         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
         db.getUserBySPId(req.params.id).then(
-            user => db.createProspect(user.id).then(
+            user => db.createProspect(user.id, getName()).then(
                 prospect => res.send({sitepower_id: prospect.sitepower_id})
             ).catch(err => {
                 res.status(400).send("Cannot get prospect sitepower_id for " + req.params.id);
@@ -46,4 +46,15 @@ module.exports = function (app, authMiddleware, mongodb) {
         );
 
     })
+    function getName(){
+        var adjs = ["осенний", "скрытый", "горький", "туманный", "тихий", "пустой", "сухой","темный", "летний", "ледяной", "нежный", "тихий", "белый", "прохладный", "весенний","зимний", "сумеречный", "рассветный", "малиновый", "тоненький","выветрившийся","синий", "вздымающийся", "сломанный", "холодный", "влажный", "падающий", "морозный", "зеленый", "длинный", "поздний", "затяжной", "жирный", "маленький", "утренний", "грязный", "старый",  "красный", "грубый", "неподвижный", "маленький", "сверкающий", "пульсирующий", "застенчивый", "блуждающий", "увядший", "дикий", "черный", "молодой", "святой", "одинокий","ароматный", "выдержанный", "снежный", "гордый", "цветочный", "беспокойный", "божественный","полированный", "древний", "фиолетовый", "живой", "безымянный"]
+
+            , nouns = ["водопад", "ветер", "дождь", "снег", "закат", "лист", "рассвет", "блеск", "лес", "холм", "облако", "луг", "солнце","ручеек", "куст", "огонь", "цветок", "светлячок", "перо", "пруд","звук", "прибой",  "гром", "цветок","резонанс","лес", "туман", "мороз", "голос","дым"];
+
+        return jsUcfirst(adjs[Math.floor(Math.random()*(adjs.length-1))])+" "+jsUcfirst(nouns[Math.floor(Math.random()*(nouns.length-1))]);
+    }
+    function jsUcfirst(string)
+    {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
 }

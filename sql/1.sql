@@ -34,4 +34,5 @@ create unique index t_file_uuid_uindex
 ALTER TABLE t_prospect drop column chat;
 
 ALTER TABLE t_prospect add column class VARCHAR(10);
+ALTER TABLE t_prospect add column full_name VARCHAR(1000);
 
