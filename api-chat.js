@@ -1,25 +1,74 @@
 const db = require('./queries');
 const debug = require('debug')('sitepower.io-backend:api-chat');
+const moment = require('moment');
 
 module.exports = function (app, authMiddleware, mongodb) {
     app.get("/api/chats", authMiddleware, (req, res) => {
         debug("/api/chats");
-        db.getChatsByUserId(req.session.passport.user).then(chats => res.send(chats)).catch((err) => {
+        db.getChatsByUserId(req.session.passport.user).then(chats => {
+            responseChats = [];
+            /*chats.forEach(chat => {
+                let responseChat = {}
+                responseChat.created = chat.created;
+                responseChat.sitepower_id = chat.sitepower_id;
+                responseChat.class = chat.class;
+                responseChat.name = chat.full_name;
+                responseChat.lastOpenDt = chat.last_open_dt;
+                responseChat.lastMessage = chat.last_msg;
+                const msgs = mongodb.db("sitepower").collection("chats").find({_id:chat.sitepower_id});
+                debug("/api/chats", "msgs0", msgs);
+                const unreadMsgs = msgs.filter(item => moment(item.created) > moment(chat.last_open_dt));
+                debug("/api/chats", "msgs1", unreadMsgs);
+                //responseChat.countUnread = .length;
+                //debug("/api/chats", "msgs1", responseChat.countUnread);
+                responseChats.push(responseChat);
+            })
+            res.send(responseChats)*/
+            for (let i = 0, l = chats.length; i < l; i++) {
+                let chat = chats[i];
+                mongodb.db("sitepower").collection("chats").findOne({_id:chat.sitepower_id}, (err, result) => {
+                    if (err) debug("/api/chats", "ERROR", err.message);
+                    let responseChat = {}
+                    responseChat.created = chat.created;
+                    responseChat.sitepower_id = chat.sitepower_id;
+                    responseChat.class = chat.class;
+                    responseChat.name = chat.full_name;
+                    responseChat.lastOpenDt = chat.last_open_dt;
+                    responseChat.lastMessage =  chat.last_msg ? chat.last_msg :  {};
+                    if (result && result.messages) {
+                        const unreadMsgs = result.messages.filter(item => moment(item.created) > moment(chat.last_open_dt));
+                        responseChat.countUnread = unreadMsgs.length;
+                    }
+
+                    responseChats.push(responseChat);
+                    if (i === (l - 1)){
+                        res.send(responseChats);
+                    }
+                });
+
+
+            }
+
+
+        }).catch((err) => {
             res.status(400).send("Cannot get chats");
             debug("/api/chats", err.message);
         });
     })
+
+    let mongoPromise = (id) => {
+        return new Promise((resolve, reject) => {
+            mongodb.db("sitepower").collection("chats").findOne({_id:id}, (err, result) => {
+                err ? reject(err) : resolve(result)
+            })
+        })
+    };
+
     app.get("/api/chat/:id", (req, res) => {
         debug("/api/chat/:id", req.params.id);
 
-        let mongoPromise = () => {
-            return new Promise((resolve, reject) => {
-                mongodb.db("sitepower").collection("chats").findOne({_id:req.params.id}, (err, result) => {
-                    err ? reject(err) : resolve(result)
-                })
-            })
-        };
-        mongoPromise().then(function(result) {
+
+        mongoPromise(req.params.id).then(function(result) {
             res.header("Access-Control-Allow-Origin", req.headers.origin);
             res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
             res.send(result)

@@ -91,7 +91,7 @@ module.exports = function (app, session, passport, mongodb) {
             }).catch(err => disconnect("Widget not found!"))
 
         } else if (connection.userSpId) {
-            chatStore.set('chat:'+connection.userSpId, JSON.stringify({chat: connection.chatId, type: "user", origin:connection.origin, created: moment()}));
+            chatStore.set('chat:'+connection.userSpId, JSON.stringify({chat: connection.chatId, type: "user", origin:connection.origin, created: moment().format()}));
             socket.sitepower_id = connection.userSpId;
             debug("{CONNECT SUCCESS USER}", scon);
         }
@@ -130,21 +130,27 @@ module.exports = function (app, session, passport, mongodb) {
                 if (!value) return;
                 let sender = JSON.parse(value);
                 let ssender = JSON.stringify(sender);
-                let msgSend = {created:moment(), body:msg.body, type:msg.type, link:msg.link, direction:msg.direction}; // сообщение для отправки
+                let msgSend = {created:moment().format(), body:msg.body, type:msg.type, link:msg.link}; // сообщение для отправки
+
                 let senderType = sender.type;
                 debug("{SEND}", ssender);
                 if (senderType == "user") {
                     let recepient_id = msg.recepient_id;
+                    msgSend.direction = "from_user";
                 } else {
-
+                    msgSend.direction = "to_user";
                 }
                 let recepient_id = senderType === "user" ? msg.recepient_id : sender.recepient_id;
                 debug("{SEND TO RECEPIENT}", ssender, recepient_id);
                 if (!recepient_id) throw Error("Recipient not found!")
 
                 let prospect_id = senderType === "user" ? msg.recepient_id : socket.sitepower_id;
+                db.updateLastMessage(prospect_id, msgSend).then(() => {
+                    mongodb.db("sitepower").collection("chats").updateOne({ _id: prospect_id }, {$push: {messages: msgSend}/*, $set: {last : msgSend}*/}, { upsert: true });
+                }).catch(err => {
+                    debug("{SAVE MESSAGE ERROR}", err.message);
+                })
 
-                mongodb.db("sitepower").collection("chats").updateOne({ _id: prospect_id }, {$push: {messages: msgSend}}, { upsert: true });
 
                 if (senderType === "prospect") {
                     msgSend.sender_id = prospect_id;

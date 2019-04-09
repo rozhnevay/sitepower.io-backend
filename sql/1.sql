@@ -35,4 +35,6 @@ ALTER TABLE t_prospect drop column chat;
 
 ALTER TABLE t_prospect add column class VARCHAR(10);
 ALTER TABLE t_prospect add column full_name VARCHAR(1000);
+ALTER TABLE t_prospect add column last_open_dt TIMESTAMP DEFAULT now();
+ALTER TABLE t_prospect add column last_msg JSON;
 

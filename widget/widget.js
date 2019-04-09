@@ -264,8 +264,12 @@ $("body").append('<div id="feedback"/>');
                 msg.recepient_id = localStorage.getItem("sitepower_recepient_id");
                 msg.sender_id = localStorage.getItem("sitepower_id");
                 msg.direction = "to_user";*/
+                var msg = {};
+                msg.body = $(".feedbackfull-b-input textarea").val();
+                msg.type = "text";
+                msg.link = "";
 
-                socket.emit("send", $(".feedbackfull-b-input textarea").val());
+                socket.emit("send", msg);
                 $(".feedbackfull-b-input textarea").val("");
 
             });
