@@ -16,7 +16,7 @@ module.exports = function (app, authMiddleware, passport) {
             }
 
             req.login(user, err => {
-                res.send(user);
+                res.send({id: user.id, login: user.login, name: user.name, created: user.created, sitepower_id: user.sitepower_id});
             });
 
         })(req, res, next);

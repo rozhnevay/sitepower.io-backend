@@ -7,23 +7,6 @@ module.exports = function (app, authMiddleware, mongodb) {
         debug("/api/chats");
         db.getChatsByUserId(req.session.passport.user).then(chats => {
             responseChats = [];
-            /*chats.forEach(chat => {
-                let responseChat = {}
-                responseChat.created = chat.created;
-                responseChat.sitepower_id = chat.sitepower_id;
-                responseChat.class = chat.class;
-                responseChat.name = chat.full_name;
-                responseChat.lastOpenDt = chat.last_open_dt;
-                responseChat.lastMessage = chat.last_msg;
-                const msgs = mongodb.db("sitepower").collection("chats").find({_id:chat.sitepower_id});
-                debug("/api/chats", "msgs0", msgs);
-                const unreadMsgs = msgs.filter(item => moment(item.created) > moment(chat.last_open_dt));
-                debug("/api/chats", "msgs1", unreadMsgs);
-                //responseChat.countUnread = .length;
-                //debug("/api/chats", "msgs1", responseChat.countUnread);
-                responseChats.push(responseChat);
-            })
-            res.send(responseChats)*/
             for (let i = 0, l = chats.length; i < l; i++) {
                 let chat = chats[i];
                 mongodb.db("sitepower").collection("chats").findOne({_id:chat.sitepower_id}, (err, result) => {
@@ -34,8 +17,9 @@ module.exports = function (app, authMiddleware, mongodb) {
                     responseChat.class = chat.class;
                     responseChat.name = chat.full_name;
                     responseChat.lastOpenDt = chat.last_open_dt;
-                    responseChat.lastMessage =  chat.last_msg ? chat.last_msg :  {};
-                    if (result && result.messages) {
+                    responseChat.lastMessage = {};
+                    if (result && result.messages && result.messages.length > 0) {
+                        responseChat.lastMessage = result.messages[result.messages.length - 1];
                         const unreadMsgs = result.messages.filter(item => moment(item.created) > moment(chat.last_open_dt));
                         responseChat.countUnread = unreadMsgs.length;
                     }

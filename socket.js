@@ -145,11 +145,8 @@ module.exports = function (app, session, passport, mongodb) {
                 if (!recepient_id) throw Error("Recipient not found!")
 
                 let prospect_id = senderType === "user" ? msg.recepient_id : socket.sitepower_id;
-                db.updateLastMessage(prospect_id, msgSend).then(() => {
-                    mongodb.db("sitepower").collection("chats").updateOne({ _id: prospect_id }, {$push: {messages: msgSend}/*, $set: {last : msgSend}*/}, { upsert: true });
-                }).catch(err => {
-                    debug("{SAVE MESSAGE ERROR}", err.message);
-                })
+
+                mongodb.db("sitepower").collection("chats").updateOne({ _id: prospect_id }, {$push: {messages: msgSend}}, { upsert: true });
 
 
                 if (senderType === "prospect") {
