@@ -17,12 +17,16 @@ module.exports = function (app, authMiddleware, mongodb) {
                     responseChat.class = chat.class;
                     responseChat.name = chat.full_name;
                     responseChat.lastOpenDt = chat.last_open_dt;
-                    responseChat.lastMessage = {};
+                    if (result && result.messages && result.messages.length > 0) {
+                        responseChat.messages = result.messages;
+                    }
+                    /*
                     if (result && result.messages && result.messages.length > 0) {
                         responseChat.lastMessage = result.messages[result.messages.length - 1];
                         const unreadMsgs = result.messages.filter(item => moment(item.created) > moment(chat.last_open_dt));
                         responseChat.countUnread = unreadMsgs.length;
                     }
+                    */
 
                     responseChats.push(responseChat);
                     if (i === (l - 1)){
