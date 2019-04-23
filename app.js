@@ -6,7 +6,7 @@ const app = express();
 
 require('dotenv').config();
 const session = require('express-session');
-
+const compression = require('compression');
 const redisStore = require('connect-redis') (session);
 const bodyParser = require('body-parser')
 const passport = require('passport')
@@ -16,9 +16,12 @@ app.enable("trust proxy");
 const LocalStrategy = require('passport-local').Strategy
 const db = require('./queries');
 const bcrypt = require('bcryptjs');
+const busboy = require('connect-busboy');
+app.use(busboy());
 app.use(express.static(publicRoot))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
+app.use(compression());
 app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 })
@@ -28,7 +31,7 @@ const fs = require('fs');
 fs.readFile(widgetRoot+"/"+"widget.js", (err, data) => {
     if (err) debug("{WIDGET}", err.message)
     if (data) {
-        app.get("/widget/:id", (req, res, next) => {
+        app.get("/api/widget/:id", (req, res, next) => {
             res.send(data.toString().replace(/%%HOST%%/g, process.env.HOST).replace(/%%WIDGET_ID%%/g, req.params.id))
         })
     }
@@ -48,14 +51,14 @@ app.use(session({
   secret:   process.env.SECRET,
   key:      'sitepower.sid.' + process.env.NODE_ENV,
   resave:   true,
+  rolling: true,
   saveUninitialized: false,
   cookie: {
         path: '/',
         httpOnly: true,
         secure: false,
         maxAge: 60 * 60 * 1000
-    },
-  rolling: true
+    }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -102,12 +105,8 @@ require('./api-forms')(app, authMiddleware); // Forms API
 
 require('./api-upload')(app, authMiddleware); // Upload
 
-const mongo = require("mongodb").MongoClient;
-mongo.connect(process.env.MONGO_URL, (err, db) => {
-    if (err) return debug(err);
-    require('./socket')(app, session, passport, db); // Socket API
-    require('./api-chat')(app, authMiddleware, db); // Chat API
-})
+require('./socket')(app, session, passport); // Socket API
+require('./api-chat')(app, authMiddleware); // Chat API
 
 
 

@@ -8,7 +8,7 @@ const redis = require('redis');
 
 
 
-module.exports = function (app, session, passport, mongodb) {
+module.exports = function (app, session, passport) {
     var server = http.createServer();
     server.listen(3031);
     server.on('listening', onListening);
@@ -65,11 +65,11 @@ module.exports = function (app, session, passport, mongodb) {
         debug("{CONNECT START Auth}", scon);
         if (connection.prospectSpId) {
             db.getProspectUserBySPId(connection.prospectSpId).then(prospect =>{
-                debug("{CONNECT OK getProspectUserBySPId}", scon)
+                debug("{CONNECT OK getProspectUserBySPId}", prospect.user_id, scon)
                 return db.getUserById(prospect.user_id).then(user => {
-                    debug("{CONNECT OK getUserById}", scon)
+                    debug("{CONNECT OK getUserById}", user.id, connection.formattedOrigin);
 
-                    return db.getFormByUserIdOrigin(prospect.user_id, connection.formattedOrigin).then((form) =>{
+                    return db.getFormByUserIdOrigin(user.id, connection.formattedOrigin).then(() =>{
                         debug("{CONNECT OK getFormByUserIdOrigin}", scon)
                         try {
                             const localTime = moment();
@@ -84,10 +84,9 @@ module.exports = function (app, session, passport, mongodb) {
                         } catch (e) {
                             disconnect(e.message);
                         }
-
                         //prospectChats[socket.handshake.query.sitepower_id] = chatId;
-                    }).catch(err => disconnect("Origin not found!"))
-                }).catch(err => disconnect("User not found!"))
+                    }).catch(err => disconnect("Origin not found! " + err.message))
+                }).catch(err => disconnect("User not found! " + err.message))
             }).catch(err => disconnect("Widget not found!"))
 
         } else if (connection.userSpId) {
@@ -124,52 +123,139 @@ module.exports = function (app, session, passport, mongodb) {
     io.on('connection', function(socket){
         socket.on('send', function(msg){
             debug("{SEND}", socket.sitepower_id, JSON.stringify(msg));
-
-            chatStore.get("chat:"+socket.sitepower_id, (err, value) => {
+            chatStore.get("chat:" + socket.sitepower_id, (err, value) => {
                 if (err) debug("{SEND ERROR}", err.message);
                 if (!value) return;
+                /* Параметры сообщения */
+                let msg_body = msg.body; //тело сообщения
+                let msg_type = msg.type; // тип сообщения (текст, ссылка)
+                let msg_link = msg.link; // url вложения
+                let msg_direction = "";       // направление
+                //let msg_recepient_sp_id;       // получатель сообщения (sitepower_id): если мы - user, то берется из сообщения, если мы - prospect - берется из Redis, записывается при connect
+                let msg_prospect_id;
+                let msg_operator_id;    //socket.request.user
+
+
                 let sender = JSON.parse(value);
-                let ssender = JSON.stringify(sender);
-                let msgSend = {created:moment().format(), body:msg.body, type:msg.type, link:msg.link}; // сообщение для отправки
-
                 let senderType = sender.type;
-                debug("{SEND}", ssender);
-                if (senderType == "user") {
-                    let recepient_id = msg.recepient_id;
-                    msgSend.direction = "from_user";
+                debug("{SEND}", value);
+                let msgSend = {body: msg.body, type: msg.type, link: msg.link, recepient_id: msg.recepient_id};
+
+                if (senderType === "user") {
+                    msg_direction = "from_user";
+                    msg_prospect_id = msg.recepient_id;
+                    msg_operator_id = socket.request.user;
                 } else {
-                    msgSend.direction = "to_user";
+                    msg_direction = "to_user";
+                    msg_prospect_id = socket.sitepower_id
                 }
-                let recepient_id = senderType === "user" ? msg.recepient_id : sender.recepient_id;
-                debug("{SEND TO RECEPIENT}", ssender, recepient_id);
-                if (!recepient_id) throw Error("Recipient not found!")
+                db.getChatBySpId(msg_prospect_id).then(prospect =>{
+                    msg_prospect_id = prospect.id;
+                    return db.createMessage(msg_prospect_id, msg_body, msg_type, msg_link, msg_operator_id, msg_direction).then(res => {
+                        return db.getMessageById(res.id).then(msg => {
+                            return db.updateLastMessageOperator(msg_prospect_id, msg.id, msg_direction, msg_operator_id).then(() => {
+                                return db.setCountUnanswered(msg_prospect_id, msg_direction).then(() => {
+                                    // посылаем обновленный чат и message
+                                    return db.getChatById(msg_prospect_id).then(chat => {
+                                        // 1 - прямой получатель
+                                        debug("{SEND TO RECEPIENT}", sender, msg.recepient_id);
+                                        chatStore.get("chat:" + msg.recepient_id, (err, value) => {
+                                            if (err) debug("{SEND ERROR 2}", err.message);
+                                            let recepient = JSON.parse(value);
+                                            if (recepient) io.to(recepient.chat).emit("receive", {
+                                                chat: chat,
+                                                msg: msg
+                                            });   // посылаем актуальное состояние чата
+                                        })
+                                        // 2 - себе же
+                                        debug("{SEND TO SENDER}", sender.chat);
+                                        io.to(sender.chat).emit("receive", {chat: chat, msg: msg});
+                                    }).catch(err => debug("socket", "send", "getChatById", err.message))
+                                }).catch(err => debug("socket", "send", "setCountUnanswered", err.message))
+                            }).catch(err => debug("socket", "send", "updateLastMessage", err.message));
+                        }).catch(err => debug("send error", "getMessageById", err.message))
+                    }).catch(err => debug("send error", "createMessage", err.message))
+                }).catch(err => debug("send error", "getChatBySpId", err.message))
 
-                let prospect_id = senderType === "user" ? msg.recepient_id : socket.sitepower_id;
 
-                mongodb.db("sitepower").collection("chats").updateOne({ _id: prospect_id }, {$push: {messages: msgSend}}, { upsert: true });
+                //if (!recepient_id) throw Error("Recipient not found!")
+                //
 
+            })
+            /*db.getMessageId().then(res => {
+                chatStore.get("chat:" + socket.sitepower_id, (err, value) => {
+                    if (err) debug("{SEND ERROR}", err.message);
+                    if (!value) return;
+                    let sender = JSON.parse(value);
+                    let ssender = JSON.stringify(sender);
+                    let msgSend = {
+                        id : res.id,
+                        created: Date.now(),
+                        body: msg.body,
+                        type: msg.type,
+                        link: msg.link,
+                        recepient_id: msg.recepient_id
+                    }; // сообщение для отправки
 
-                if (senderType === "prospect") {
-                    msgSend.sender_id = prospect_id;
-                }
+                    let senderType = sender.type;
+                    debug("{SEND}", ssender);
+                    if (senderType == "user") {
+                        let recepient_id = msg.recepient_id;
+                        msgSend.direction = "from_user";
+                    } else {
+                        msgSend.direction = "to_user";
+                    }
+                    let recepient_id = senderType === "user" ? msg.recepient_id : sender.recepient_id;
+                    debug("{SEND TO RECEPIENT}", ssender, recepient_id);
+                    if (!recepient_id) throw Error("Recipient not found!")
 
-                /* 1 - прямой получатель */
-                chatStore.get("chat:"+recepient_id, (err, value) => {
-                    if (err) debug("{SEND ERROR 2}", err.message);
-                    let recepient = JSON.parse(value);
-                    if (recepient) {
-                        io.to(recepient.chat).emit("receive", msg);
+                    let prospect_id = senderType === "user" ? msg.recepient_id : socket.sitepower_id;
+
+                    mongodb.db("sitepower").collection("chats").updateOne({_id: prospect_id}, {$push: {messages: msgSend}}, {upsert: true}).then().catch(err => debug("socket", "send", "updateOne", err.message));
+                    debug("socket", msgSend.id);
+                    db.updateLastMessage(prospect_id, msgSend, msgSend.id).then().catch(err => debug("socket", "send", "updateLastMessage", err.message));
+                    db.incCountUnanswered(prospect_id).then().catch(err => debug("socket", "send", "incCountUnanswered", err.message));
+
+                    if (senderType === "prospect") {
+                        msgSend.sender_id = prospect_id;
                     }
 
+                    /!* 1 - прямой получатель *!/
+                    chatStore.get("chat:" + recepient_id, (err, value) => {
+                        if (err) debug("{SEND ERROR 2}", err.message);
+                        let recepient = JSON.parse(value);
+                        if (recepient) {
+                            io.to(recepient.chat).emit("receive", msgSend);
+                        }
+
+                    })
+                    /!* 2 - себе же *!/
+                    debug("{SEND TO SENDER}", ssender, sender.chatId);
+                    io.to(sender.chat).emit("receive", msgSend);
                 })
-                /* 2 - себе же */
-                debug("{SEND TO SENDER}", ssender, sender.chatId);
-                io.to(sender.chat).emit("receive", msg);
-            })
+            }).catch(err => debug("send error", err.message))*/
         });
         socket.on('disconnect', function () {
             debug("{DISCONNECT}", socket.sitepower_id);
             chatStore.del("chat:"+socket.sitepower_id);
+        });
+        socket.on('print', function (msg) {
+            debug("{PRINT}", socket.sitepower_id);
+            chatStore.get("chat:"+socket.sitepower_id, (err, value) => {
+                if (err) debug("{PRINT ERROR}", err.message);
+                if (!value) return;
+                let sender = JSON.parse(value);
+                let recepient_id = sender.recepient_id;
+                msg.sender_id = socket.sitepower_id;
+                msg.created = moment().format();
+                chatStore.get("chat:"+recepient_id, (err, value) => {
+                    if (err) debug("{PRINT ERROR 2}", err.message);
+                    let recepient = JSON.parse(value);
+                    if (recepient) {
+                        io.to(recepient.chat).emit("print", msg);
+                    }
+                })
+            });
         });
     });
 /*

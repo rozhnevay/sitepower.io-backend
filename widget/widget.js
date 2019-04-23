@@ -189,6 +189,7 @@ $("head").append('<style>' + widgetStyles + '</style>')
 /* [END] STYLES */
 
 /**Plugin start */
+$("#feedback").remove();
 $("body").append('<div id="feedback"/>');
 (function( $ ) {
     $.fn.feedback = function() {
@@ -246,7 +247,7 @@ $("body").append('<div id="feedback"/>');
             var socket = io('http://' + chat_url + '/?sitepower_id='+sitepower_id);
             socket.on('connect', function () {
                 /*get chat history by sitepower_id*/
-                $.get('http://' + api_url + '/api/chat/' + sitepower_id).done(function (data){
+                $.get('http://' + api_url + '/api/prospect/chat/' + sitepower_id).done(function (data){
                     if (data.chat && data.chat.messages) {
                         data.chat.messages.forEach(function(item){addMsg(item)});
                     }
@@ -272,6 +273,13 @@ $("body").append('<div id="feedback"/>');
                 socket.emit("send", msg);
                 $(".feedbackfull-b-input textarea").val("");
 
+            });
+            $(".feedbackfull-b-input").on("keydown", function (event) {
+                var msg = {};
+                msg.body = "";
+                msg.type = "print";
+                msg.link = "";
+                socket.emit("print", msg);
             });
             socket.on("receive", function(msg){
                 console.log("receive");

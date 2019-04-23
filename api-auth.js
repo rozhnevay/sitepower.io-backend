@@ -42,8 +42,8 @@ module.exports = function (app, authMiddleware, passport) {
                 db.createUser(req.body.email, hash, req.body.name).then((data) => {
                     db.getUserById(data.id).then((user) => {
                         req.login(user, err => res.send(user));
-                    }).catch((err) => res.send(err.toString()))
-                }).catch((err) => res.send(err.toString()));
+                    }).catch((err) => res.status(400).send(err.toString()))
+                }).catch((err) => res.status(400).send(err.toString()));
             });
         });
     });
@@ -63,12 +63,23 @@ module.exports = function (app, authMiddleware, passport) {
                 pass: process.env.MAILGUN_SMTP_PASSWORD
             }
         });
-
+        let lnk = "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token;
         var mailOptions = {
             from: process.env.MAILGUN_SMTP_LOGIN,
             to: payload.email,
             subject: 'sitepower.io: Password Reset',
-            text: "<h1>Welcome</h1><p>" + "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token + "</p>"
+            //html: "<h1>Welcome</h1><p>" + "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token + "</p>"
+            html:
+                '<center>\n' +
+                '<div style="border-radius:10px 10px 0px 0px;background-color:black;width:600px;margin-top:30px">' +
+                '        <img src="" width=\'301px\' style=\'margin-top:51px;\'>' +
+                '        <p style="font-size:18px;color:white;padding-bottom: 65px;font-weight: bold;margin: 0;">Recovery your password</p>' +
+                '    </div>' +
+                '    <div style="background:white;box-shadow: 0px 0px 6px 0px rgba(0,0,0,0.16);width:600px;padding-bottom: 60px;">' +
+                '        <p class="text">Hello, ' + user.name +'.  Use the link below to set up new password for your account. If you didn’t request to reset your password, ignore this email and the link will expire on its own.</p>' +
+                '        <a href=' + lnk + '>'+ lnk + '</a>' +
+                '    </div>' +
+                '</center>'
         };
 
         transporter.sendMail(mailOptions, function(error, info){
@@ -83,13 +94,23 @@ module.exports = function (app, authMiddleware, passport) {
     app.get('/api/resetpassword/:id/:token', function(req, res) {
         db.getUserById(req.params.id).then((user) => {
             const payload = jwt.decode(req.params.token, user.pass + "-" + user.created.getTime());
+/*
             res.send('<form action="http://' + process.env.DOMAIN + '/api/resetpassword" method="POST">' +
                 '<input type="hidden" name="id" value="' + payload.id + '" />' +
                 '<input type="hidden" name="token" value="' + req.params.token + '" />' +
                 '<input type="password" name="password" value="" placeholder="Enter your new password..." />' +
                 '<input type="submit" value="Reset Password" />' +
                 '</form>');
-        }).catch((err) => res.send(err.toString()))
+*/
+            res.send(
+                '<form action="http://' + process.env.DOMAIN + '/api/resetpassword" method="POST">' +
+                '<input type="hidden" name="id" value="' + payload.id + '" />' +
+                '<input type="hidden" name="token" value="' + req.params.token + '" />' +
+                '<input type="password" name="password" value="" placeholder="Enter your new password..." />' +
+                '<input type="submit" value="Reset Password" />' +
+                '</form>'
+            );
+        }).catch((err) => res.status(400).send(err.toString()))
 
 
     });
@@ -107,7 +128,7 @@ module.exports = function (app, authMiddleware, passport) {
                     });
                 })
             }
-        ).catch((err) => res.send(err.toString()));
+        ).catch((err) => res.status(400).send(err.toString()));
 
     });
 
@@ -117,8 +138,11 @@ module.exports = function (app, authMiddleware, passport) {
         if (req.body.email) {
             const email = req.body.email;
             db.getUserByLogin(email).then(
-                (user) => sendResetLink(user).then(res.send("OK")).catch((err) => res.send(err.toString()))
-            ).catch((err) => res.send(err.toString()));
+                (user) => {
+                    sendResetLink(user)
+                    res.send("OK")
+                }
+            ).catch((err) => res.status(400).send(err.toString()));
         } else {
             throw "Email address is missing";
         }
