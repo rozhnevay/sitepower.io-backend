@@ -1,6 +1,8 @@
 const db = require('./queries');
 const debug = require('debug')('sitepower.io-backend:api-chat');
 const moment = require('moment');
+const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 module.exports = function (app, authMiddleware) {
     /*app.get("/api/chats", authMiddleware, (req, res) => {
@@ -146,6 +148,47 @@ module.exports = function (app, authMiddleware) {
         })
 
     })
+    fs.readFile("./views/mail_chat.html", (err, data) => {
+        if (err) debug("/api/chat/:id/send", err.message)
+        if (data) {
+            app.get("/api/chat/:id/send", authMiddleware, (req, res) => {
+                debug("/api/chat/:id/send", req.params.id)
+                db.getMessagesByChatId(req.params.id).then(messages => {
+                    return db.getChatBySpId(req.params.id).then(chat => {
+                        return db.getUserById(req.session.passport.user).then(
+                            (user) => {
+                                try {
+                                    let messagesHtml = "";
+                                    messages.forEach(item => {
+                                        let type = item.direction === "from_user" ? "admin" : "client";
+                                        let body = item.body;
+                                        let time = moment(item.created).format("HH:mm:ss");
+                                        messagesHtml += `
+                                        <div class="${type} text-left">
+                                            <span class="msg">${body}</span>
+                                            <span class="time">${time}</span>
+                                        </div>
+                                    `;
+                                    })
+                                    let html = data.toString().replace("%%MESSAGES%%", messagesHtml);
+                                    html = html.replace("%%PROSPECT_NAME%%", chat.full_name);
+                                    html = html.replace("%%PROSPECT_REGION%%", "");
+                                    html = html.replace("%%PROSPECT_PHONE%%", chat.phone ? chat.phone : "");
+                                    html = html.replace("%%PROSPECT_EMAIL%%", chat.login ? chat.login : "");
+                                    let email = req.session.passport.user.login;
+                                    sendChat(html, user.login);
+                                    res.send("OK")
+                                } catch (e) {
+                                    res.status(400).send(e.message)
+                                }
+                            }
+                        ).catch((err) => res.status(400).send(err.message));
+                    }).catch((err) => res.status(400).send(err.message));
+                }).catch(err => res.status(400).send(err.message));
+            })
+        }
+    })
+
     function getName(){
         var adjs = ["осенний", "скрытый", "горький", "туманный", "тихий", "пустой", "сухой","темный", "летний", "ледяной", "нежный", "тихий", "белый", "прохладный", "весенний","зимний", "сумеречный", "рассветный", "малиновый", "тоненький","выветрившийся","синий", "вздымающийся", "сломанный", "холодный", "влажный", "падающий", "морозный", "зеленый", "длинный", "поздний", "затяжной", "жирный", "маленький", "утренний", "грязный", "старый",  "красный", "грубый", "неподвижный", "маленький", "сверкающий", "пульсирующий", "застенчивый", "блуждающий", "увядший", "дикий", "черный", "молодой", "святой", "одинокий","ароматный", "выдержанный", "снежный", "гордый", "цветочный", "беспокойный", "божественный","полированный", "древний", "фиолетовый", "живой", "безымянный"]
 
@@ -157,4 +200,28 @@ module.exports = function (app, authMiddleware) {
     {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
+
+    const sendChat = (html, email) => {
+        const transporter = nodemailer.createTransport({
+            host: process.env.MAILGUN_SMTP_SERVER,
+            auth: {
+                user: process.env.MAILGUN_SMTP_LOGIN,
+                pass: process.env.MAILGUN_SMTP_PASSWORD
+            }
+        });
+        const mailOptions = {
+            from: process.env.MAILGUN_SMTP_LOGIN,
+            to: email,
+            subject: 'sitepower.io: Диалог',
+            html:html
+        };
+
+        transporter.sendMail(mailOptions, function(error, info){
+            if (!error) {
+                console.log('Email sent: ' + info.response);
+            } else {
+                console.log(error);
+            }
+        });
+    };
 }
