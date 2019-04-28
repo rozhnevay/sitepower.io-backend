@@ -34,9 +34,7 @@ module.exports = {
     setCountUnanswered:setCountUnanswered,
     updateLastOpen:updateLastOpen,
     updateClass:updateClass,
-    updateName: updateName,
-    updateLogin:updateLogin,
-    updatePhone:updatePhone,
+    updateContact:updateContact,
     updateForm:updateForm,
     getFormBySpId:getFormBySpId,
     createOperator:createOperator,
@@ -106,23 +104,27 @@ function updateForm(id, user_id, form) {
 }
 
 function getChatsByUserId(user_id, limit, before_id) {
-    return db.any('select ' +
-        '    p.id, ' +
-        '    p.sitepower_id, ' +
-        '    p.class, ' +
-        '    p.full_name as name, ' +
-        '    p.phone, ' +
-        '    m.body as last_msg_body, ' +
-        '    m.created as last_msg_created, ' +
-        '    p.last_msg_id, ' +
-        '    p.cnt_unanswered, ' +
-        '    p.last_open_dt as lastOpenDt ' +
-        'from t_prospect p ' +
-        'inner join t_msg m on m.id = p.last_msg_id ' +
-        'where p.user_id = $1 and (p.class <> $2 or p.class is null) ' +
-        'and p.last_msg_id < $4 ' +
-        'order by p.last_msg_id desc, p.id desc ' +
-        'limit $3', [user_id, 'SPAM', limit, before_id]);
+    return db.any(`
+		select
+            p.created,
+            p.id,
+            p.sitepower_id,
+            p.class,
+            p.full_name as name,
+            p.phone,
+            p.login,
+            m.body as last_msg_body,
+            m.created as last_msg_created,
+            p.last_msg_id,
+            p.cnt_unanswered,
+            p.last_open_dt as lastOpenDt
+        from t_prospect p
+        inner join t_msg m on m.id = p.last_msg_id
+        where p.user_id = $1 and (p.class <> $2 or p.class is null)
+        and p.last_msg_id < $4
+        order by p.last_msg_id desc, p.id desc
+        limit $3
+		`, [user_id, 'SPAM', limit, before_id]);
 }
 
 function getChatBySpId(id) {
@@ -130,7 +132,24 @@ function getChatBySpId(id) {
 }
 
 function getChatById(id) {
-    return db.one('select * from t_prospect where id = $1', id);
+    return db.one(`
+		select
+            p.created,
+            p.id,
+            p.sitepower_id,
+            p.class,
+            p.full_name as name,
+            p.phone,
+            p.login,
+            m.body as last_msg_body,
+            m.created as last_msg_created,
+            p.last_msg_id,
+            p.cnt_unanswered,
+            p.last_open_dt as lastOpenDt
+        from t_prospect p
+        inner join t_msg m on m.id = p.last_msg_id
+        where p.id = $1 and (p.class <> $2 or p.class is null)
+        `, [id, 'SPAM']);
 }
 
 function getUserBySPId(sitepower_id) {
@@ -160,16 +179,9 @@ function updateClass(sitepower_id, class_name) {
     return db.none('update t_prospect set class = $1 where sitepower_id = $2', [class_name, sitepower_id]);
 }
 
-function updateLogin(sitepower_id, login) {
-    return db.none('update t_prospect set login = $1 where sitepower_id = $2', [login, sitepower_id]);
-}
 
-function updatePhone(sitepower_id, phone) {
-    return db.none('update t_prospect set phone = $1 where sitepower_id = $2', [phone, sitepower_id]);
-}
-
-function updateName(sitepower_id, name) {
-    return db.none('update t_prospect set full_name = $1 where sitepower_id = $2', [name, sitepower_id]);
+function updateContact(sitepower_id, name, login, phone) {
+    return db.none('update t_prospect set full_name = $2, login = $3, phone = $4 where sitepower_id = $1', [sitepower_id, name, login, phone]);
 }
 
 function getProspectUserBySPId(sitepower_id) {
@@ -200,23 +212,24 @@ function createMessage(prospect_id, body, type, link, operator_id, direction) {
 
 function getMessageById(id) {
     console.log("getMessageById id = " + id);
-    return db.one(
-        'select ' +
-        '    m.id, ' +
-        '    m.created, ' +
-        '    m.body, ' +
-        '    m.type, ' +
-        '    m.link, ' +
-        '    m.direction, ' +
-        '    m.operator_id, ' +
-        '    o.name, ' +
-        '    case when m.direction = \'from_user\' then p.sitepower_id else u.sitepower_id end recepient_id, ' +
-        '    case when m.direction = \'from_user\' then u.sitepower_id else p.sitepower_id end sender_id ' +
-        'from t_msg m ' +
-        'inner join t_prospect p on m.prospect_id = p.id ' +
-        'inner join t_user u on p.user_id = u.id ' +
-        'left join t_user o on m.operator_id = o.id ' +
-        'where m.id = $1', id);
+    return db.one(`
+        select
+            m.id,
+            m.created,
+            m.body,
+            m.type,
+            m.link,
+            m.direction,
+            m.operator_id,
+            o.name,
+            case when m.direction = 'from_user' then p.sitepower_id else u.sitepower_id end recepient_id,
+            case when m.direction = 'from_user' then u.sitepower_id else p.sitepower_id end sender_id
+        from t_msg m
+        inner join t_prospect p on m.prospect_id = p.id
+        inner join t_user u on p.user_id = u.id
+        left join t_user o on m.operator_id = o.id
+        where m.id = $1
+		`, id);
 }
 
 function getMessagesByChatId(sitepower_id) {

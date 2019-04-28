@@ -42,7 +42,11 @@ module.exports = function (app, authMiddleware) {
         let limit = req.query.limit ? req.query.limit : 50;
         let beforeId = req.query.beforeId ? req.query.beforeId : Number.MAX_SAFE_INTEGER;
         debug("/api/chats", limit, beforeId);
-        db.getChatsByUserId(req.session.passport.user, limit, beforeId).then(chats => {res.send(chats);}).catch((err) => {
+        db.getChatsByUserId(req.session.passport.user, limit, beforeId).then(chats => {
+            let chatsMap = {};
+            chats.forEach(item => chatsMap[item.sitepower_id] = item);
+            res.send(chatsMap);
+        }).catch((err) => {
             res.status(400).send("Не удается получить список диалогов (" + req.session.passport.user + ")");
             debug(req.session.passport.user, "/api/chats", err.message);
         });
@@ -94,24 +98,16 @@ module.exports = function (app, authMiddleware) {
         debug("/api/chat/:id POST", req.params.id, JSON.stringify(req.body));
         if (req.body.lastOpenDt) {
             debug("/api/chat/:id POST", req.body.lastOpenDt);
-            db.updateLastOpen(req.params.id, req.body.lastOpenDt);
+            db.updateLastOpen(req.params.id, req.body.lastOpenDt).then(() => res.send("OK")).catch(err => res.status(400).send("Cannot set data"));
         }
         if (req.body.class) {
             debug("/api/chat/:id POST", req.body.class);
-            db.updateClass(req.params.id, req.body.class);
+            db.updateClass(req.params.id, req.body.class).then(() => res.send("OK")).catch(err => res.status(400).send("Cannot set data"));
         }
-        if (req.body.login) {
-            debug("/api/chat/:id POST", req.body.login);
-            db.updateLogin(req.params.id, req.body.login);
-        }
-        if (req.body.phone) {
-            debug("/api/chat/:id POST", req.body.phone);
-            db.updatePhone(req.params.id, req.body.phone);
-        }
-        if (req.body.name) {
-            debug("/api/chat/:id POST", req.body.name);
-            db.updateName(req.params.id, req.body.name);
-        }
+
+    })
+    app.post("/api/chat/:id/contact", authMiddleware, (req, res) => {
+        db.updateContact(req.params.id, req.body.name, req.body.login, req.body.phone).then(() => res.send("OK")).catch(err => res.status(400).send("Cannot set data"));
     })
 
     app.get("/api/prospect/chat/:id", (req, res) => {

@@ -144,7 +144,7 @@ module.exports = function (app, session, passport) {
                 if (senderType === "user") {
                     msg_direction = "from_user";
                     msg_prospect_id = msg.recepient_id;
-                    msg_operator_id = socket.request.user;
+                    msg_operator_id = socket.request.user.id;
                 } else {
                     msg_direction = "to_user";
                     msg_prospect_id = socket.sitepower_id

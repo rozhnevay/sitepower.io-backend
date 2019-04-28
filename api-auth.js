@@ -2,6 +2,7 @@ const db = require('./queries');
 const nodemailer = require('nodemailer');
 const jwt = require('jwt-simple');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
 
 module.exports = function (app, authMiddleware, passport) {
 
@@ -56,7 +57,7 @@ module.exports = function (app, authMiddleware, passport) {
         }
         const secret = user.pass + "-" + user.created.getTime();
         const token = jwt.encode(payload, secret);
-        var transporter = nodemailer.createTransport({
+        const transporter = nodemailer.createTransport({
             host: process.env.MAILGUN_SMTP_SERVER,
             auth: {
                 user: process.env.MAILGUN_SMTP_LOGIN,
@@ -64,22 +65,23 @@ module.exports = function (app, authMiddleware, passport) {
             }
         });
         let lnk = "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token;
-        var mailOptions = {
+        let logo = "http://" + process.env.DOMAIN + "/static/logo-black.svg";
+        const mailOptions = {
             from: process.env.MAILGUN_SMTP_LOGIN,
             to: payload.email,
             subject: 'sitepower.io: Password Reset',
-            //html: "<h1>Welcome</h1><p>" + "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token + "</p>"
-            html:
-                '<center>\n' +
-                '<div style="border-radius:10px 10px 0px 0px;background-color:black;width:600px;margin-top:30px">' +
-                '        <img src="" width=\'301px\' style=\'margin-top:51px;\'>' +
-                '        <p style="font-size:18px;color:white;padding-bottom: 65px;font-weight: bold;margin: 0;">Recovery your password</p>' +
-                '    </div>' +
-                '    <div style="background:white;box-shadow: 0px 0px 6px 0px rgba(0,0,0,0.16);width:600px;padding-bottom: 60px;">' +
-                '        <p class="text">Hello, ' + user.name +'.  Use the link below to set up new password for your account. If you didn’t request to reset your password, ignore this email and the link will expire on its own.</p>' +
-                '        <a href=' + lnk + '>'+ lnk + '</a>' +
-                '    </div>' +
-                '</center>'
+            html:`
+                <center>
+                <div style="border-radius:10px 10px 0px 0px;background-color:black;width:600px;margin-top:30px">
+                        <img src="${logo}" width=\'301px\' style=\'margin-top:51px;\'>
+                        <p style="font-size:18px;color:white;padding-bottom: 65px;font-weight: bold;margin: 0;">Восстановление пароля</p>
+                    </div>
+                    <div style="background:white;box-shadow: 0px 0px 6px 0px rgba(0,0,0,0.16);width:600px;padding-bottom: 60px;">
+                        <p class="text">Здравствуйте, ${user.name}.  Используйте ссылку ниже для установки нового пароля. Если вы не запрашивали смену пароля, проигнорируйте данное сообщение.</p>
+                        <a href="${lnk}">${lnk}</a>
+                    </div>
+                </center>
+                `
         };
 
         transporter.sendMail(mailOptions, function(error, info){
@@ -91,46 +93,63 @@ module.exports = function (app, authMiddleware, passport) {
         });
     };
 
-    app.get('/api/resetpassword/:id/:token', function(req, res) {
-        db.getUserById(req.params.id).then((user) => {
-            const payload = jwt.decode(req.params.token, user.pass + "-" + user.created.getTime());
-/*
-            res.send('<form action="http://' + process.env.DOMAIN + '/api/resetpassword" method="POST">' +
-                '<input type="hidden" name="id" value="' + payload.id + '" />' +
-                '<input type="hidden" name="token" value="' + req.params.token + '" />' +
-                '<input type="password" name="password" value="" placeholder="Enter your new password..." />' +
-                '<input type="submit" value="Reset Password" />' +
-                '</form>');
-*/
-            res.send(
-                '<form action="http://' + process.env.DOMAIN + '/api/resetpassword" method="POST">' +
-                '<input type="hidden" name="id" value="' + payload.id + '" />' +
-                '<input type="hidden" name="token" value="' + req.params.token + '" />' +
-                '<input type="password" name="password" value="" placeholder="Enter your new password..." />' +
-                '<input type="submit" value="Reset Password" />' +
-                '</form>'
-            );
-        }).catch((err) => res.status(400).send(err.toString()))
+    fs.readFile("./views/new_pass_form.html", (err, data) => {
+        if (err) {
+            debug("/api/resetpassword/:id/:token", err.message)
+            return;
+        }
+        if (data) {
+            app.get("/api/resetpassword/:id/:token", (req, res) => {
+                db.getUserById(req.params.id).then((user) => {
+                    const payload = jwt.decode(req.params.token, user.pass + "-" + user.created.getTime());
+                    let html = data.toString().replace("%%DOMAIN%%", process.env.DOMAIN);
+                    html = html.replace("%%ID%%", req.params.id);
+                    html = html.replace("%%TOKEN%%", req.params.token);
+                    res.send(html);
+                }).catch(err => res.status(400).send(err.message))
+            })
+        }
+    })
+
+    fs.readFile("./views/reset_ok.html", (err, data) => {
+        if (err) {
+            debug("/api/resetpassword", err.message)
+            return;
+        }
+        if (data) {
+            app.post('/api/resetpassword', function(req, res) {
+                db.getUserById(req.body.id).then((user) => {
+                        const payload = jwt.decode(req.body.token, user.pass + "-" + user.created.getTime());
+                        bcrypt.genSalt(10, function(err, salt) {
+                            bcrypt.hash(req.body.password, salt, function (err, hash) {
+                                if (err) {
+                                    debug("/api/resetpassword", err.message)
+                                    return;
+                                }
+                                db.updateUserPassword(req.body.id, hash).then(() => {
+                                        let html = data.toString().replace("%%DOMAIN%%", process.env.DOMAIN);
+                                        res.send(html)
+                                }).catch(err => res.status(400).send(err.toString()))
+                            });
+                        })
+                    }
+                ).catch((err) => res.status(400).send(err.toString()));
+
+            });
+            // app.get("/api/resetpassword/:id/:token", (req, res) => {
+            //     db.getUserById(req.params.id).then((user) => {
+            //         const payload = jwt.decode(req.params.token, user.pass + "-" + user.created.getTime());
+            //         let html = data.toString().replace("%%DOMAIN%%", process.env.DOMAIN);
+            //         html = html.replace("%%ID%%", req.params.id);
+            //         html = html.replace("%%TOKEN%%", req.params.token);
+            //         res.send(html);
+            //     }).catch(err => res.status(400).send(err.message))
+            // })
+        }
+    })
 
 
-    });
-    app.post('/api/resetpassword', function(req, res) {
-        db.getUserById(req.body.id).then((user) => {
-                const payload = jwt.decode(req.body.token, user.pass + "-" + user.created.getTime());
-                console.log("req.body.id = " + req.body.id);
-                console.log("req.body.password = " + req.body.password);
-                bcrypt.genSalt(10, function(err, salt) {
-                    bcrypt.hash(req.body.password, salt, function (err, hash) {
-                        if (err) return next(err);
-                        db.updateUserPassword(req.body.id, hash).then(
-                            res.send('<h1>Your password has been successfully changed</h1>')
-                        ).catch(err => err)
-                    });
-                })
-            }
-        ).catch((err) => res.status(400).send(err.toString()));
 
-    });
 
     app.post("/api/reset", (req, res) => {
         //db.getUserById(req.session.passport.user).then(user => res.send({ user: user }));
