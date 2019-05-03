@@ -119,3 +119,6 @@ alter table t_msg
 ALTER TABLE t_prospect ADD COLUMN operator_id int;
 create index t_prospect_operator_id_index
 	on t_prospect (operator_id asc);
+
+ALTER TABLE t_prospect ADD COLUMN region varchar(1000);
+/*     DONE       */

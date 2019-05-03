@@ -53,12 +53,26 @@ module.exports = function (app, session, passport) {
     chatStore.keys("chat*", function(err, rows) {
         rows.forEach(row => chatStore.del(row));
     });
+
+
+    io.use((socket, next)=> {
+        debug("{CONNECT START Auth GET SESSION ID}");
+        if (!socket || !socket.handshake || !socket.handshake.query || !socket.handshake.query.session_id || socket.request.user) {
+            return next();
+        } else {
+            let sval = socket.handshake.query.session_id;
+            console.log("sval = " + sval);
+        }
+        return next();
+    });
     io.on('connect', function (socket) {
+        debug("{CONNECT START Auth}", socket.handshake.query);
+
         let connection = {
             prospectSpId    : socket.handshake.query.sitepower_id,
-            userSpId        : socket.request.user.sitepower_id,
+            userSpId        : socket.request.user.parent_sitepower_id ? socket.request.user.parent_sitepower_id : socket.request.user.sitepower_id,
             origin          : socket.handshake.headers.origin,
-            formattedOrigin : extractHostname(socket.handshake.headers.origin),
+            formattedOrigin : socket.handshake.headers.origin ? extractHostname(socket.handshake.headers.origin) : "",
             chatId          : socket.client.id
         }
         let scon = JSON.stringify(connection);
@@ -72,13 +86,13 @@ module.exports = function (app, session, passport) {
                     return db.getFormByUserIdOrigin(user.id, connection.formattedOrigin).then(() =>{
                         debug("{CONNECT OK getFormByUserIdOrigin}", scon)
                         try {
-                            const localTime = moment();
-                            const endingDate = moment(user.date_ending);
-                            const diff = endingDate.diff(localTime, 'days');
-                            if (diff <= 0) {
+                            const localTime = new Date();
+                            const endingDate = new Date(user.date_ending);
+                            //const diff = endingDate.diff(localTime, 'days');
+                            if (endingDate < localTime) {
                                 disconnect("Agreement is Ended!");
                             }
-                            chatStore.set('chat:'+connection.prospectSpId, JSON.stringify({chat: connection.chatId, type: "prospect", origin:connection.origin, recepient_id: user.sitepower_id, created: moment()}));
+                            chatStore.set('chat:'+connection.prospectSpId, JSON.stringify({chat: [connection.chatId], type: "prospect", origin:connection.origin, recepient_id: user.sitepower_id, created: moment().format(), updated: moment().format()}));
                             socket.sitepower_id = connection.prospectSpId;
                             debug("{CONNECT SUCCESS PROSPECT}", scon);
                         } catch (e) {
@@ -90,7 +104,19 @@ module.exports = function (app, session, passport) {
             }).catch(err => disconnect("Widget not found!"))
 
         } else if (connection.userSpId) {
-            chatStore.set('chat:'+connection.userSpId, JSON.stringify({chat: connection.chatId, type: "user", origin:connection.origin, created: moment().format()}));
+            chatStore.get("chat:" + connection.userSpId, (err, value) => {
+              let sVal = "";
+              if (!value) {
+                  sVal = JSON.stringify({chat: [connection.chatId], type: "user", origin:connection.origin, created: moment().format(), updated: moment().format()})
+              } else {
+                  let pval = JSON.parse(value);
+                  pval.chat.push(connection.chatId);
+                  pval.updated = moment().format();
+                  sVal = JSON.stringify(pval);
+              }
+              chatStore.set('chat:'+connection.userSpId, sVal);
+            })
+            //chatStore.set('chat:'+connection.userSpId, JSON.stringify({chat: connection.chatId, type: "user", origin:connection.origin, created: moment().format()}));
             socket.sitepower_id = connection.userSpId;
             debug("{CONNECT SUCCESS USER}", scon);
         }
@@ -118,6 +144,9 @@ module.exports = function (app, session, passport) {
     io.on('disconnect', socket => {
         debug("{DISCONNECT}", socket.sitepower_id);
         chatStore.del("chat:"+socket.sitepower_id);
+        /*chatStore.get("chat:" + socket.sitepower_id, (err, value) => {
+            let pval = JSON.parse(value);
+        });*/
     });
 
     io.on('connection', function(socket){
@@ -162,14 +191,17 @@ module.exports = function (app, session, passport) {
                                         chatStore.get("chat:" + msg.recepient_id, (err, value) => {
                                             if (err) debug("{SEND ERROR 2}", err.message);
                                             let recepient = JSON.parse(value);
-                                            if (recepient) io.to(recepient.chat).emit("receive", {
-                                                chat: chat,
-                                                msg: msg
-                                            });   // посылаем актуальное состояние чата
+                                            if (recepient) {
+                                                recepient.chat.forEach(item => io.to(item).emit("receive", {chat: chat, msg: msg}))
+                                            }   // посылаем актуальное состояние чата
                                         })
                                         // 2 - себе же
                                         debug("{SEND TO SENDER}", sender.chat);
-                                        io.to(sender.chat).emit("receive", {chat: chat, msg: msg});
+                                        //io.to(sender.chat).emit("receive", {chat: chat, msg: msg});
+                                        sender.chat.forEach(item => {
+                                            console.log("item = " + item);
+                                            io.to(item).emit("receive", {chat: chat, msg: msg})
+                                        })
                                     }).catch(err => debug("socket", "send", "getChatById", err.message))
                                 }).catch(err => debug("socket", "send", "setCountUnanswered", err.message))
                             }).catch(err => debug("socket", "send", "updateLastMessage", err.message));
@@ -236,8 +268,21 @@ module.exports = function (app, session, passport) {
             }).catch(err => debug("send error", err.message))*/
         });
         socket.on('disconnect', function () {
-            debug("{DISCONNECT}", socket.sitepower_id);
-            chatStore.del("chat:"+socket.sitepower_id);
+            debug("{DISCONNECT}", socket.id);
+            //chatStore.del("chat:"+socket.sitepower_id);
+            chatStore.get("chat:" + socket.sitepower_id, (err, value) => {
+                let pval = JSON.parse(value);
+                let sval = "";
+                if (!pval||!pval.chat) return;
+                if (pval.chat.length === 1) {
+                    chatStore.del("chat:"+socket.sitepower_id);
+                } else {
+                    delete pval.chat[pval.chat.indexOf(socket.id)];
+                    pval.updated = moment().format();
+                    sval = JSON.stringify(pval);
+                    chatStore.set('chat:'+socket.sitepower_id, sval);
+                }
+            });
         });
         socket.on('print', function (msg) {
             debug("{PRINT}", socket.sitepower_id);
@@ -246,17 +291,36 @@ module.exports = function (app, session, passport) {
                 if (!value) return;
                 let sender = JSON.parse(value);
                 let recepient_id = sender.recepient_id;
+
                 msg.sender_id = socket.sitepower_id;
                 msg.created = moment().format();
                 chatStore.get("chat:"+recepient_id, (err, value) => {
                     if (err) debug("{PRINT ERROR 2}", err.message);
                     let recepient = JSON.parse(value);
+
+
                     if (recepient) {
-                        io.to(recepient.chat).emit("print", msg);
+                        recepient.chat.forEach(item => io.to(item).emit("print", msg))
                     }
                 })
+                // своим
+                if (!recepient_id) {
+                    chatStore.get("chat:"+socket.sitepower_id, (err, value) => {
+                        if (err) debug("{PRINT ERROR 3}", err.message);
+                        let recepient = JSON.parse(value);
+
+
+                        if (recepient) {
+                            recepient.chat.forEach(item => {
+                                if (item === socket.id) return;
+                                io.to(item).emit("print", msg)
+                            })
+                        }
+                    })
+                }
             });
         });
+
     });
 /*
     function updateChat(id, msg) {

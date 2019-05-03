@@ -1,0 +1,710 @@
+.mobile-message {
+	display: none;
+}
+.header {
+	height: 15vh;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	background-color: black;
+}
+.header > .container {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+.header .menu ul{
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+.header .menu li {
+	display: inline;
+	margin-right: 10px;
+	color:#808080;
+}
+.header .menu li:hover {
+	color:white;
+}
+.header .menu li.active {
+	color:white;
+}
+.header .menu a {
+	color:inherit;
+	text-decoration: none;
+}
+.main {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	height: 85vh;
+}
+.main .left-side {
+	background-color: #363E48;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 350px;
+}
+.main .left-side .input-group {
+	width: 350px;
+}
+.main .left-side .search {
+	border-top-left-radius: 20px;
+	border-bottom-left-radius: 20px;
+	border-width: 0;
+}
+.main .left-side .btn-white {
+	background-color: white;
+	border-top-right-radius: 20px;
+	border-bottom-right-radius: 20px;
+	color:#E0E0E0;
+}
+.main .left-side .chats {
+	width: 100%;
+}
+.main .left-side .chats .item {
+	height: 78px;
+	width: 100%;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	padding-left: 15px;
+	padding-right: 15px;
+	cursor: pointer;
+}
+.main .left-side .chats .item:hover {
+	background-color: #404954;
+}
+.main .left-side .chats .item.selected {
+	background-color: #404954;
+}
+.main .left-side .chats .item .left {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+.main .left-side .chats .item .left .img {
+	min-height: 50px;
+	min-width: 50px;
+	background-color: white;
+	display: flex;
+	align-items: center;
+	padding-top:12.5px;
+	padding-bottom:12.5px;
+	padding-left: 17.2px;
+	border-radius: 5px;
+}
+.main .left-side .chats .item .left .img .color {
+	position: relative;
+	left: 10px;
+    bottom: 22px;
+	height: 12px;
+	width: 12px;
+	border-radius: 50%;
+	border: 2px solid #404954;
+}
+/* COLORS */
+.main .left-side .chats .item .left .img .color.purple {
+	background-color: #8970DD;
+}
+.main .left-side .chats .item .left .img .color.orange {
+	background-color: #DDA670;
+}
+.main .left-side .chats .item .left .img .color.pink {
+	background-color: #DD70D9;
+}
+.main .left-side .chats .item .left .img .color.blue {
+	background-color: #70B7DD;
+}
+.main .left-side .chats .item .left .img .color.green {
+	background-color: #A1DD70;
+}
+.main .left-side .chats .item .left .img .color.black {
+	background-color: black;
+}
+.main .left-side .chats .item .left .img .color.white {
+	background-color: white;
+}
+.main .left-side .chats .item .left .img .color.red {
+	background-color: #DD7070;
+}
+/* COLORS END */
+.main .left-side .chats .item .left .text {
+	margin-left: 10px;
+}
+.main .left-side .chats .item .left .text .title{
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+}
+.main .left-side .chats .item .left .text .message{
+	font-size: 10px;
+	color:#808080;
+}
+
+.main .chat {
+	background-color: #F2F7F7;
+	display: flex;
+	flex-direction: column;
+}
+.main .chat .messages {
+	padding-right: 30px;
+	padding-left: 30px;
+}
+.main .chat .info {
+	padding-right: 30px;
+	padding-left: 30px;
+}
+.main .chat .info .systems {
+	color:#AAAAAA;
+	text-align: center;
+	margin-top: 20px;
+}
+.main .chat .info .systems p {
+	padding: 0;
+	margin: 0;
+}
+.main .chat .info .systems .msg {
+	font-size: 14px;
+}
+.main .chat .info .systems .time {
+	font-size: 12px;
+}
+.main .chat .messages .systems {
+	color:#AAAAAA;
+	text-align: center;
+	margin-top: 20px;
+}
+.main .chat .messages .systems p {
+	padding: 0;
+	margin: 0;
+}
+.main .chat .messages .systems .msg {
+	font-size: 14px;
+}
+.main .chat .messages .systems .time {
+	font-size: 12px;
+}
+.main .chat .messages .client {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-top: 20px;
+}
+.main .chat .messages .client .msg {
+	background-color: #91D5FF;
+	color:white;
+	font-size: 14px;
+	border-radius: 5px;
+	padding-top: 14px;
+	padding-bottom: 14px;
+	padding-left: 15px;
+	padding-right: 15px;
+}
+.main .chat .messages .client .msg .attachment { 
+	display: block;
+	margin-top: 3px;
+	cursor: pointer;
+}
+.main .chat .messages .client .time {
+	color:#AAAAAA;
+	font-size: 12px;
+	margin-left: 20px;
+}
+.main .chat .messages .admin {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-top: 20px;
+}
+.main .chat .messages .admin .msg {
+	background-color: #63D381;
+	color:white;
+	font-size: 14px;
+	border-radius: 5px;
+	padding-top: 14px;
+	padding-bottom: 14px;
+	padding-left: 15px;
+	padding-right: 15px;
+}
+.main .chat .messages .admin .time {
+	color:#AAAAAA;
+	font-size: 12px;
+	margin-right: 20px;
+}
+.new-msg-separator {
+    /* Чтобы спрятать часть линий, которые 
+    ** будут вылазить за пределы блока */
+    overflow: hidden;
+    /* Выравнивание заголовка по центру, 
+    ** можно использовать left, right */
+    text-align: center;
+    color: #E0E0E0;
+    /* Тут можно добавить другие стили для заголовка */
+    font-size: 14px;
+    margin-top: 20px;
+}
+.new-msg-separator:before,
+.new-msg-separator:after {
+    /* Обязательно указываем пустое свойство content, 
+    ** иначе псевдоэлементы не появятся на сайте */
+    content: "";
+    /* Указываем что наши линии будут строчно-блочные и 
+    ** выравнивание по высоте - по центру */
+    display: inline-block;
+    vertical-align: middle;
+    /* Задаем ширину 100% и выбираем высоту линии, 
+    ** в нашем примере она равна 4 пикселям */
+    width: 100%;
+    height: 1px;
+    /* Добавляем цвет для линии */
+    background-color: #E0E0E0;
+    /* Добавляем пседоэлемантам возможность изменить 
+    ** позицию линии, для создания отступов от текста */
+    position: relative;
+}
+.new-msg-separator:before {
+    /* Смещаем левую линию на 100% влево, чтобы линия 
+    ** встала рядом с текстом слева */
+    margin-left: -100%;
+    /* Указываем в пикселях отступ линии от текста заголовка */
+    left: -14px;
+}
+.new-msg-separator:after {
+    /* Смещаем правую линию на 100% вправо, чтобы 
+    ** линия встала рядом с текстом справа */
+    margin-right: -100%;
+    /* Указываем в пикселях отступ линии от текста заголовка */
+    right: -14px;
+}
+.main .input {
+	height: 60px;
+	display: flex;
+	background-color: white;
+	flex-direction: row;
+	align-items: center;
+	margin-top: 20px;
+	justify-content: space-between;
+	flex: 0 0 auto;
+}
+.main .input .left {
+	display: flex;
+	width: 100%;
+	align-items: center;
+}
+.main .input .pin-file {
+	margin-left: 20px;
+	display: flex;
+	align-items: center;
+	width: 40px;
+}
+.main .input .smiles {
+	margin-left: 10px;
+	color:#A0A0A0;
+	font-size: 26px;
+	cursor: pointer;
+}
+.main .input .button {
+	margin-right: 20px;
+}
+.main .input .msg {
+	margin-left: 20px;
+	width: 100%;
+	margin-right: 20px;
+}
+.main .input .msg input:focus {
+	outline:none;
+}
+.main .input .msg input {
+	border:0;
+	width: 100%;
+}
+/* FILE INPUT STYLE */
+.js .inputfile {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.inputfile + label {
+    font-size: 10px;
+    /* 20px */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    display: inline-block;
+    overflow: hidden;
+    margin-bottom: 0;
+    /* 10px 20px */
+}
+
+.no-js .inputfile + label {
+    display: none;
+}
+
+.inputfile:focus + label,
+.inputfile.has-focus + label {
+    outline: 1px dotted #000;
+    outline: -webkit-focus-ring-color auto 5px;
+}
+
+.inputfile + label * {
+    /* pointer-events: none; */
+    /* in case of FastClick lib use */
+}
+
+.inputfile + label svg {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    fill: currentColor;
+    margin-top: -0.25em;
+    /* 4px */
+    margin-right: 0.25em;
+    /* 4px */
+}
+
+/* style 5 */
+
+.inputfile-5 + label {
+    color: #d3394c;
+}
+
+.inputfile-5:focus + label,
+.inputfile-5.has-focus + label,
+.inputfile-5 + label:hover {
+    color: #722040;
+}
+
+.inputfile-5 + label figure {
+    width: 100px;
+    height: 135px;
+    background-color: #d3394c;
+    display: block;
+    position: relative;
+    padding: 30px;
+    margin: 0 auto 10px;
+}
+
+.inputfile-5:focus + label figure,
+.inputfile-5.has-focus + label figure,
+.inputfile-5 + label:hover figure {
+    background-color: #722040;
+}
+
+.inputfile-5 + label figure::before,
+.inputfile-5 + label figure::after {
+    width: 0;
+    height: 0;
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.inputfile-5 + label figure::before {
+    border-top: 20px solid #dfc8ca;
+    border-left: 20px solid transparent;
+}
+
+.inputfile-5 + label figure::after {
+    border-bottom: 20px solid #722040;
+    border-right: 20px solid transparent;
+}
+
+.inputfile-5:focus + label figure::after,
+.inputfile-5.has-focus + label figure::after,
+.inputfile-5 + label:hover figure::after {
+    border-bottom-color: #d3394c;
+}
+
+.inputfile-5 + label svg {
+    width: 100%;
+    height: 100%;
+    fill: #f1e5e6;
+}
+.main .right-side {
+	background-color: white;
+	padding-right: 30px;
+	padding-left: 30px;
+	display: flex;
+	flex-direction: column;
+	width: 350px;
+}
+.main .right-side .top {
+	text-align: center;
+	margin-top: 40px;
+}
+.main .right-side .top .name{
+	font-size: 24px;
+	color: black;
+	font-weight: bold;
+}
+.main .right-side .top .desc {
+	font-size: 14px;
+	color:#5A5A5A;
+	padding: 0;
+	margin: 0;
+}
+.main .right-side .top .date {
+	color:#5A5A5A;
+	font-size: 12px;
+}
+.main .right-side hr {
+	padding: 0;
+	margin-top: 20px;
+}
+.main .right-side .information {
+	display: block;
+	margin-top: 20px;
+}
+.main .right-side .information .title {
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+.main .right-side .information .items {
+	color:#5A5A5A;
+	font-size: 14px;
+	padding: 0;
+	margin-bottom: 10px;
+}
+.main .right-side .actions {
+	display: block;
+	margin-top: 20px;
+}
+.main .right-side .actions .title {
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+.main .right-side .actions .buttons .btn-red{
+	background-color: #DD7070;
+	color:white;
+	width: 100%;
+	margin-bottom: 15px;
+}
+.main .right-side .actions .buttons .btn-blue{
+	background-color: #70B7DD;
+	color:white;
+	width: 100%;
+	margin-bottom: 15px;
+}
+.main .right-side .actions .buttons .btn-black{
+	background-color: black;
+	color:white;
+	width: 100%;
+	margin-bottom: 15px;
+}
+.main .right-side .categories {
+	display: block;
+	width: 210px;
+}
+.main .right-side .categories .title {
+	font-size: 14px;
+	color: #5A5A5A;
+}
+.main .right-side .categories .colors {
+	display: flex;
+	flex-direction: row;
+} 
+.main .right-side .categories .color {
+	height: 15px;
+	width: 15px;
+	border-radius: 50%;
+	margin-right: 10px;
+}
+.main .right-side .categories .color:hover {
+	height: 20px;
+	width: 20px;
+	border-radius: 50%;
+	margin-right: 15px;
+}
+.main .right-side .categories .color.active {
+	height: 20px;
+	width: 20px;
+	border-radius: 50%;
+	margin-right: 10px;
+}
+.main .right-side .categories .color-white {
+	background-color: white;
+	border: 1px solid #E0E0E0;
+}
+.main .right-side .categories .color-green {
+	background-color: #A1DD70;
+}
+.main .right-side .categories .color-blue {
+	background-color: #70B7DD;
+}
+.main .right-side .categories .color-red {
+	background-color: #DD7070;
+}
+.main .right-side .categories .color-pink {
+	background-color: #DD70D9;
+}
+.main .right-side .categories .color-purple {
+	background-color: #8970DD;
+}
+
+.main .right-side .categories .color-orange {
+	background-color: #DDA670;
+}
+.main .right-side .categories .color-black {
+	background-color: black;
+}
+.modal-login {
+	width: 382px;
+}
+.btn-black {
+	background-color: black;
+	color:white;
+}
+.btn-black:hover {
+	color:white;
+}
+.btn-white {
+	background-color: white;
+	color:black;
+}
+.btn-white:hover {
+	color:black;
+}
+.md-header {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	margin-top: 40px;
+}
+.md-main {
+	margin-top: 40px;
+	padding-right: 40px;
+	padding-left: 40px;
+	padding-bottom: 40px;
+}
+.md-np-main {
+	margin-top: 40px;
+	padding-right: 40px;
+	padding-left: 40px;
+	padding-bottom: 40px;
+	color:white;
+}
+.md-fp {
+	font-size: 12px;
+	color:#020202;
+	display: flex;
+	justify-content: flex-end;
+	padding: 0;
+	margin-bottom: 20px;
+	margin-top: 10px;
+	font-weight: bold;
+}
+.md-fp:hover,.md-su:hover {
+	color:black;
+	text-decoration: none;
+}
+.md-su {
+	font-size: 12px;
+	display: flex;
+	justify-content: center;
+	margin-top: 20px;
+	padding: 0;
+	font-weight: bold;
+	color:#020202;
+
+}
+.mt-20 {
+	margin-top: 20px;
+}
+.modal-np {
+	background-color: #000000;
+	border-radius: 10px;
+}
+.ps-text {
+	font-size: 20px;
+}
+
+/* MODAL NEW ADD */
+.modal-show .modal {
+	display: block;
+	position: relative;
+}
+/* MODAL NEW ADD END */
+@media (max-width: 1000px) {
+	.modal-login {
+		width: auto;
+	}
+	.mobile-message {
+		display: block;
+	}
+	.main .left-side .search input {
+		width: 100%;
+	}
+	.header>.container {
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.header {
+		height: auto;
+	}
+	.header .menu {
+		text-align: center;
+		margin-top: 10px;
+	}
+	.header .buttons {
+		width: 100%;
+		margin-top: 10px;
+		margin-bottom: 10px;
+	}
+	.header .dropdown-menu {
+		width: 100%;
+	}
+	.header .buttons .btn-group {
+		width: 100%;
+	}
+	.main {
+		flex-wrap: wrap;
+	}
+	.main .left-side {
+		width: 100%;
+		height: auto;
+	}
+	.main .chat {
+		width: 100%;
+		height: auto;
+	}
+	.main .right-side {
+		width: 100%;
+		height: auto;
+	}
+}
+
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+   .main .left-side {
+   	width: auto;
+   }
+   .main .chat {
+   	width: 100%;
+   }
+   .main .right-side {
+   	min-width: 350px;
+   	width: auto;
+   }
+}
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (max-width: 1000px){
+	.main .left-side {
+		width: 100%;
+		height: auto;
+	}
+	.main .chat {
+		width: 100%;
+		height: auto;
+	}
+	.main .right-side {
+		width: 100%;
+		height: auto;
+	}
+}

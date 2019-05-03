@@ -97,7 +97,7 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => done(null, user.id));
-passport.deserializeUser((id, done) => db.getUserById(id).then(user => done(null, {id:user.id, login:user.login, name:user.name, created:user.created, sitepower_id:user.sitepower_id})));
+passport.deserializeUser((id, done) => db.getUserById(id).then(user => done(null, {id:user.id, parent:user.parent_id, parent_sitepower_id:user.parent_sitepower_id, login:user.login, name:user.name, created:user.created, sitepower_id:user.sitepower_id})));
 
 
 require('./api-auth')(app, authMiddleware, passport, rateLimit); // Auth API

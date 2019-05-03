@@ -43,7 +43,8 @@ module.exports = {
     createMessage:createMessage,
     getMessageById:getMessageById,
     getChatById:getChatById,
-    getMessagesByChatId:getMessagesByChatId
+    getMessagesByChatId:getMessagesByChatId,
+    setRegionByChatId:setRegionByChatId
 };
 
 function getUserByLogin(login) {
@@ -51,7 +52,12 @@ function getUserByLogin(login) {
 }
 
 function getUserById(id) {
-    return db.one('select * from t_user where id = $1', id);
+    return db.one(`
+      select t.id, t.login, t.name, t.sitepower_id, t.parent_id, t.date_ending, t.created, t.updated, p.sitepower_id as parent_sitepower_id
+      from t_user t 
+      left join t_user p on t.parent_id = p.id
+      where t.id = $1`
+    , id);
 }
 
 function createUser(login, pass, name) {
@@ -117,7 +123,8 @@ function getChatsByUserId(user_id, limit, before_id) {
             m.created as last_msg_created,
             p.last_msg_id,
             p.cnt_unanswered,
-            p.last_open_dt as lastOpenDt
+            p.last_open_dt as lastOpenDt,
+            p.region
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
         where p.user_id = $1 and (p.class <> $2 or p.class is null)
@@ -145,7 +152,8 @@ function getChatById(id) {
             m.created as last_msg_created,
             p.last_msg_id,
             p.cnt_unanswered,
-            p.last_open_dt as lastOpenDt
+            p.last_open_dt as lastOpenDt,
+            p.region
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
         where p.id = $1 and (p.class <> $2 or p.class is null)
@@ -179,6 +187,10 @@ function updateClass(sitepower_id, class_name) {
     return db.none('update t_prospect set class = $1 where sitepower_id = $2', [class_name, sitepower_id]);
 }
 
+
+function setRegionByChatId(sitepower_id, region) {
+    return db.none('update t_prospect set region = $1 where sitepower_id = $2', [region, sitepower_id]);
+}
 
 function updateContact(sitepower_id, name, login, phone) {
     return db.none('update t_prospect set full_name = $2, login = $3, phone = $4 where sitepower_id = $1', [sitepower_id, name, login, phone]);

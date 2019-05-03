@@ -8,7 +8,11 @@ aws.config.update({
 var s3 = new aws.S3();
 
 module.exports = function (app, authMiddleware) {
-    app.post("/api/upload", authMiddleware, (req, res) => {
+    app.post("/api/upload"/*, authMiddleware*/, (req, res) => {
+        /*TODO : убрать*/
+        res.header("Access-Control-Allow-Origin", req.headers.origin);
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        debug("/api/upload", req);
         req.pipe(req.busboy);
         req.busboy.on('file', function (fieldname, file, filename) {
             console.log("Uploading: " + filename);
@@ -23,7 +27,7 @@ module.exports = function (app, authMiddleware) {
                 if (err) res.send("Error on uploading");
                 if (data) {
                     console.log("Uploaded in:", data.Location);
-                    db.uploadFile(params.Key, filename).then(r => res.send("http://" + process.env.DOMAIN + "/api/download/" + r.uuid)).catch(err => {
+                    db.uploadFile(params.Key, filename).then(r => res.send({url:"http://" + process.env.DOMAIN + "/api/download/" + r.uuid, file:filename})).catch(err => {
                         console.log(err.message);
                         res.send("Error on uploading")
                     });

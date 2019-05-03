@@ -44,10 +44,18 @@ module.exports = function (app, authMiddleware) {
         let limit = req.query.limit ? req.query.limit : 50;
         let beforeId = req.query.beforeId ? req.query.beforeId : Number.MAX_SAFE_INTEGER;
         debug("/api/chats", limit, beforeId);
-        db.getChatsByUserId(req.session.passport.user, limit, beforeId).then(chats => {
-            let chatsMap = {};
-            chats.forEach(item => chatsMap[item.sitepower_id] = item);
-            res.send(chatsMap);
+
+        let mainUserId = req.user.parent ? req.user.parent : req.user.id;
+
+        db.getChatsByUserId(mainUserId, limit, beforeId).then(chats => {
+            let chatsObj = {meta : {}, chats: {}};
+            chats.forEach((item, index) => {
+                chatsObj.chats[item.sitepower_id] = item;
+                if (!chats[index + 1]) {
+                    chatsObj.meta.lastId = item.last_msg_id;
+                }
+            });
+            res.send(chatsObj);
         }).catch((err) => {
             res.status(400).send("Не удается получить список диалогов (" + req.session.passport.user + ")");
             debug(req.session.passport.user, "/api/chats", err.message);
@@ -56,29 +64,6 @@ module.exports = function (app, authMiddleware) {
     app.get("/api/chat/:id", authMiddleware, (req, res) => {
         debug("/api/chat GET", req.params.id);
         db.getChatBySpId(req.params.id).then(chat => {
-            /*mongodb.db("sitepower").collection("chats").findOne({_id:chat.sitepower_id}, (err, result) => {
-                if (err) debug("/api/chats", "ERROR", err.message);
-                let responseChat = {}
-                responseChat.created = chat.created;
-                responseChat.sitepower_id = chat.sitepower_id;
-                responseChat.class = chat.class;
-                responseChat.login = chat.login;
-                responseChat.phone = chat.phone;
-                responseChat.name = chat.full_name;
-                responseChat.lastOpenDt = chat.last_open_dt;
-                if (result && result.messages && result.messages.length > 0) {
-                    responseChat.messages = result.messages;
-                }
-                    res.send(responseChat);
-            });*/
-            /*let responseChat = {}
-            responseChat.created = chat.created;
-            responseChat.sitepower_id = chat.sitepower_id;
-            responseChat.class = chat.class;
-            responseChat.login = chat.login;
-            responseChat.phone = chat.phone;
-            responseChat.name = chat.full_name;
-            res.send(responseChat);*/
             return db.getMessagesByChatId(chat.sitepower_id).then(chats => res.send(chats)).catch((err) => {return new Error(err)});
         }).catch((err) => {
             res.status(400).send("Cannot get chats");
@@ -113,19 +98,18 @@ module.exports = function (app, authMiddleware) {
     })
 
     app.get("/api/prospect/chat/:id", (req, res) => {
-        debug("/api/chat/:id", req.params.id);
+        debug("/api/prospect/chat/:id", req.params.id);
+        res.header("Access-Control-Allow-Origin", req.headers.origin);
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        db.getMessagesByChatId(req.params.id).then(chats => res.send(chats)).catch((err) => {res.status(400).send("Error on getting chats")});
 
+    })
 
-        /*mongoPromise(req.params.id).then(function(result) {
-            res.header("Access-Control-Allow-Origin", req.headers.origin);
-            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-            res.send(result)
-            debug("/api/chat/:id", req.params.id, JSON.stringify(result));
-        }).catch(err => {
-            res.status(400).send("Cannot get chat for " + req.params.id);
-            debug("/api/chat/:id", req.params.id, err.message);
-        });*/
-        return {};
+    app.post("/api/prospect/geo/:id", (req, res) => {
+        debug("/api/prospect/geo/:id", req.params.id);
+        res.header("Access-Control-Allow-Origin", req.headers.origin);
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        db.setRegionByChatId(req.params.id, req.body.region).then(() => res.send("OK")).catch((err) => {res.status(400).send("Error on settin region")});
 
     })
     /* TODO!!! Продумать проверку на Origin и ограничение на кол-во запросов в день (не больше тысчяи)*/
