@@ -18,7 +18,7 @@ module.exports = function (app, authMiddleware) {
             console.log("Uploading: " + filename);
             const key = Date.now()+"_" + filename
             const params = {
-                Bucket: 'sitepower.io',
+                Bucket: 'files.sitepower.io',
                 Body : file,
                 Key : key
             };
@@ -40,7 +40,7 @@ module.exports = function (app, authMiddleware) {
         db.getFileByUUId(req.params.id).then(r => {
                 const key = r.key;
                 const options = {
-                    Bucket    : 'sitepower.io',
+                    Bucket    : 'files.sitepower.io',
                     Key       : key,
                 };
                 s3.headObject(options, function (err, metadata) {
