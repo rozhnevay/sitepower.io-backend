@@ -60,14 +60,14 @@ module.exports = function (app, authMiddleware, passport) {
         const transporter = nodemailer.createTransport({
             host: process.env.MAILGUN_SMTP_SERVER,
             auth: {
-                user: process.env.MAILGUN_SMTP_LOGIN,
-                pass: process.env.MAILGUN_SMTP_PASSWORD
+                user: process.env.SMTP_LOGIN,
+                pass: process.env.SMTP_PASSWORD
             }
         });
         let lnk = "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token;
         let logo = "http://" + process.env.DOMAIN + "/static/logo-black.svg";
         const mailOptions = {
-            from: process.env.MAILGUN_SMTP_LOGIN,
+            from: process.env.SMTP_LOGIN,
             to: payload.email,
             subject: 'sitepower.io: Password Reset',
             html:`

@@ -189,12 +189,12 @@ module.exports = function (app, authMiddleware) {
         const transporter = nodemailer.createTransport({
             host: process.env.MAILGUN_SMTP_SERVER,
             auth: {
-                user: process.env.MAILGUN_SMTP_LOGIN,
-                pass: process.env.MAILGUN_SMTP_PASSWORD
+                user: process.env.SMTP_LOGIN,
+                pass: process.env.SMTP_PASSWORD
             }
         });
         const mailOptions = {
-            from: process.env.MAILGUN_SMTP_LOGIN,
+            from: process.env.SMTP_LOGIN,
             to: email,
             subject: 'sitepower.io: Диалог',
             html:html

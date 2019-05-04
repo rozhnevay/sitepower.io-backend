@@ -22,9 +22,18 @@ app.use(express.static(publicRoot))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(compression());
-app.get("/", (req, res, next) => {
-  res.sendFile("index.html", { root: publicRoot })
-})
+app.use(function(req, res, next) {
+    var allowedOrigins = ['https://app.sitepower.io', 'http://app.sitepower.io', 'http://app.sitepower.io.s3-website.eu-west-3.amazonaws.com'];
+    var origin = req.headers.origin;
+    if(allowedOrigins.indexOf(origin) > -1){
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    return next();
+});
+// app.get("/", (req, res, next) => {
+//   res.sendFile("index.html", { root: publicRoot })
+// })
 
 /* Widget Send*/
 const fs = require('fs');

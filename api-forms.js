@@ -41,14 +41,14 @@ module.exports = function (app, authMiddleware) {
 
         const html = data.toString().replace(/%%LINK%%/g, "http://" + process.env.DOMAIN + "/api/operator/"+ payload.id + "/" + token);
         var transporter = nodemailer.createTransport({
-            host: process.env.MAILGUN_SMTP_SERVER,
+            host: process.env.SMTP_SERVER,
             auth: {
-                user: process.env.MAILGUN_SMTP_LOGIN,
-                pass: process.env.MAILGUN_SMTP_PASSWORD
+                user: process.env.SMTP_LOGIN,
+                pass: process.env.SMTP_PASSWORD
             }
         });
         let mailOptions = {
-            from: process.env.MAILGUN_SMTP_LOGIN,
+            from: process.env.SMTP_LOGIN,
             to: payload.email,
             subject: 'sitepower.io: Operator Register',
             html:html
