@@ -7,19 +7,22 @@
 
 var debug = require('debug')('sitepower.io-backend:server');
 var http = require('http');
-var app = require('../app');
+var appObj = require('../app');
+var socket = require('../socket');
 /**
  * Get port from environment and store in Express.
  */
 
 var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
+appObj.app.set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+var server = http.createServer(appObj.app);
+require('../socket')(server, appObj.app, appObj.session, appObj.passport);
+
 
 
 /**

@@ -117,12 +117,12 @@ require('./api-forms')(app, authMiddleware); // Forms API
 
 require('./api-upload')(app, authMiddleware); // Upload
 
-require('./socket')(app, session, passport); // Socket API
+ // Socket API
 require('./api-chat')(app, authMiddleware); // Chat API
 
 
 
 
 
-module.exports = app;
+module.exports = {app, session, passport};
 

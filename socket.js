@@ -8,21 +8,12 @@ const redis = require('redis');
 
 
 
-module.exports = function (app, session, passport) {
-    var server = http.createServer();
-    server.listen(3031);
-    server.on('listening', onListening);
-    function onListening() {
-        var addr = server.address();
-        var bind = typeof addr === 'string'
-            ? 'pipe ' + addr
-            : 'port ' + addr.port;
-        debug('Listening Socket on ' + bind);
-    }
+module.exports = function (server, app, session, passport) {
     const redisStore = require('connect-redis') (session);
     const store = new redisStore({url:process.env.REDIS_URL});
+
     const io = require('socket.io').listen(server,  {resource: '/socket.io'});
-    io.set('origins', '*:*');
+
     io.use(passportSocketIo.authorize({
         passport:     passport,
         secret:       process.env.SECRET,
