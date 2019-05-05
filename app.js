@@ -28,7 +28,9 @@ app.use(function(req, res, next) {
     if(allowedOrigins.indexOf(origin) > -1){
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Credentials', true);
     return next();
 });
 // app.get("/", (req, res, next) => {
@@ -59,6 +61,7 @@ app.use(session({
   store:    sessionStore,
   secret:   process.env.SECRET,
   key:      'sitepower.sid.' + process.env.NODE_ENV,
+  proxy:    true,
   resave:   true,
   rolling: true,
   saveUninitialized: false,
