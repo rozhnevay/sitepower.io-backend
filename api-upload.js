@@ -36,7 +36,7 @@ module.exports = function (app, authMiddleware) {
 
         });
     });
-    app.get("/api/download/:id", authMiddleware, (req, res) => {
+    app.get("/api/download/:id", /*authMiddleware,*/ (req, res) => {
         db.getFileByUUId(req.params.id).then(r => {
                 const key = r.key;
                 const options = {

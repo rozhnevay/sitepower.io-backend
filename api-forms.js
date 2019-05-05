@@ -50,7 +50,7 @@ module.exports = function (app, authMiddleware) {
         let mailOptions = {
             from: process.env.SMTP_LOGIN,
             to: payload.email,
-            subject: 'sitepower.io: Operator Register',
+            subject: 'Регистрация в сервисе sitepower',
             html:html
         };
 
