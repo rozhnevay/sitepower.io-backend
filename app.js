@@ -23,7 +23,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(compression());
 app.use(function(req, res, next) {
-    var allowedOrigins = ['https://app.sitepower.io', 'http://app.sitepower.io', 'http://app.sitepower.io.s3-website.eu-west-3.amazonaws.com'];
+    var allowedOrigins = ['https://app.sitepower.io', 'http://app.sitepower.io', 'http://app.sitepower.io.s3-website.eu-west-3.amazonaws.com', 'http://localhost'];
     var origin = req.headers.origin;
     if(allowedOrigins.indexOf(origin) > -1){
         res.setHeader('Access-Control-Allow-Origin', origin);
