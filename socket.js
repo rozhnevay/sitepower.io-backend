@@ -22,7 +22,7 @@ module.exports = function (app, session, passport) {
     const redisStore = require('connect-redis') (session);
     const store = new redisStore({url:process.env.REDIS_URL});
     const io = require('socket.io').listen(server,  {resource: '/socket.io'});
-
+    io.set('origins', '*:*');
     io.use(passportSocketIo.authorize({
         passport:     passport,
         secret:       process.env.SECRET,
