@@ -1,5 +1,5 @@
 const db = require('./queries');
-const http = require('http');
+const axios = require('axios');
 const passportSocketIo = require("passport.socketio");
 
 const debug = require('debug')('sitepower.io-backend:socket');
@@ -64,7 +64,8 @@ module.exports = function (server, app, session, passport) {
             userSpId        : socket.request.user.parent_sitepower_id ? socket.request.user.parent_sitepower_id : socket.request.user.sitepower_id,
             origin          : socket.handshake.headers.origin,
             formattedOrigin : socket.handshake.headers.origin ? extractHostname(socket.handshake.headers.origin) : "",
-            chatId          : socket.client.id
+            chatId          : socket.client.id,
+            deviceId        : socket.handshake.query.device_id
         }
         let scon = JSON.stringify(connection);
         debug("{CONNECT START Auth}", scon);
@@ -83,7 +84,7 @@ module.exports = function (server, app, session, passport) {
                             if (endingDate < localTime) {
                                 disconnect("Agreement is Ended!");
                             }
-                            chatStore.set('chat:'+connection.prospectSpId, JSON.stringify({chat: [connection.chatId], type: "prospect", origin:connection.origin, recepient_id: user.sitepower_id, created: moment().format(), updated: moment().format()}));
+                            chatStore.set('chat:'+connection.prospectSpId, JSON.stringify({chat: [{chatId: connection.chatId}], type: "prospect", origin:connection.origin, recepient_id: user.sitepower_id, created: moment().format(), updated: moment().format()}));
                             socket.sitepower_id = connection.prospectSpId;
                             debug("{CONNECT SUCCESS PROSPECT}", scon);
                         } catch (e) {
@@ -98,10 +99,10 @@ module.exports = function (server, app, session, passport) {
             chatStore.get("chat:" + connection.userSpId, (err, value) => {
               let sVal = "";
               if (!value) {
-                  sVal = JSON.stringify({chat: [connection.chatId], type: "user", origin:connection.origin, created: moment().format(), updated: moment().format()})
+                  sVal = JSON.stringify({chat: [{chatId: connection.chatId, sitepower_id:socket.request.user.sitepower_id, device_id:connection.deviceId, created: moment().format()}], type: "user", origin:connection.origin, created: moment().format(), updated: moment().format()})
               } else {
                   let pval = JSON.parse(value);
-                  pval.chat.push(connection.chatId);
+                  pval.chat.push({chatId: connection.chatId, sitepower_id:socket.request.user.sitepower_id, device_id:connection.deviceId, created: moment().format()});
                   pval.updated = moment().format();
                   sVal = JSON.stringify(pval);
               }
@@ -183,16 +184,72 @@ module.exports = function (server, app, session, passport) {
                                             if (err) debug("{SEND ERROR 2}", err.message);
                                             let recepient = JSON.parse(value);
                                             if (recepient) {
-                                                recepient.chat.forEach(item => io.to(item).emit("receive", {chat: chat, msg: msg}))
+                                                recepient.chat.forEach(item => io.to(item.chatId).emit("receive", {chat: chat, msg: msg}))
                                             }   // посылаем актуальное состояние чата
+
+
                                         })
                                         // 2 - себе же
                                         debug("{SEND TO SENDER}", sender.chat);
                                         //io.to(sender.chat).emit("receive", {chat: chat, msg: msg});
                                         sender.chat.forEach(item => {
                                             console.log("item = " + item);
-                                            io.to(item).emit("receive", {chat: chat, msg: msg})
+                                            io.to(item.chatId).emit("receive", {chat: chat, msg: msg})
                                         })
+                                        // 3 - на свои девайсы
+                                        if (msg_direction === "to_user") {
+                                            return db.getUserDevices(prospect.user_id).then(devices => {
+                                                devices.map(device => device.online = false);
+                                                chatStore.get("chat:" + msg.recepient_id, (err, value) => {
+                                                    let recepient = JSON.parse(value);
+                                                    /*
+                                                    Пока отлкючил
+                                                    if (recepient) {
+                                                        recepient.chat.forEach(item => {
+                                                            devices.map(device => {
+                                                                if (device.device_id === item.device_id) {
+                                                                    device.online = true;
+                                                                }
+                                                            });
+                                                        });
+                                                    }
+                                                    debug("{DEVICES}", devices);
+                                                    */
+                                                    devices.filter(item => !item.online).forEach(item => {
+                                                    debug("{DEVICE SEND TO}", item.device_id);
+
+                                                    axios.post("https://fcm.googleapis.com/fcm/send",
+                                                        {
+                                                            notification:
+                                                                {
+                                                                    id: msg_prospect_id,
+                                                                    title: "Онлайн-диалог \"" + prospect.full_name + "\"",
+                                                                    text: msgSend.body,
+                                                                    badge: 1,
+                                                                    sound: "default"
+                                                                },
+                                                            priority: "High",
+                                                            to: item.device_id
+                                                        },
+                                                        {
+                                                            headers: {'Authorization': 'key=' + process.env.GOOGLE_FB_KEY}
+                                                        }).then(res => {
+                                                        debug("{DEVICES - GOOGLE OK}", res.data.results)
+                                                        if (res.data.results[0].error && (res.data.results[0].error === "NotRegistered" || res.data.results[0].error === "InvalidRegistration")){
+                                                            db.deleteDeviceToken(item.device_id).then(() => {
+                                                                debug("{DEVICES - DELETED TOKEN}", item.device_id)
+                                                            }).catch(err => {
+                                                                debug("{DEVICES - CANNOT DELETE TOKEN}", item.device_id, err.message);
+                                                            })
+                                                        }
+
+                                                    })
+                                                        .catch(err => debug("{DEVICES - GOOGLE ERROR}", err))
+                                                });
+                                                })
+                                            })
+                                        }
+
                                     }).catch(err => debug("socket", "send", "getChatById", err.message))
                                 }).catch(err => debug("socket", "send", "setCountUnanswered", err.message))
                             }).catch(err => debug("socket", "send", "updateLastMessage", err.message));
@@ -259,8 +316,14 @@ module.exports = function (server, app, session, passport) {
             }).catch(err => debug("send error", err.message))*/
         });
         socket.on('disconnect', function () {
-            debug("{DISCONNECT}", socket.id);
-            //chatStore.del("chat:"+socket.sitepower_id);
+            deleteChatId()
+        });
+        socket.on('exit', function () {
+            socket.disconnect(true);
+        });
+
+        const deleteChatId = () => {
+            debug("{deleteChatId}", socket.id);
             chatStore.get("chat:" + socket.sitepower_id, (err, value) => {
                 let pval = JSON.parse(value);
                 let sval = "";
@@ -268,13 +331,14 @@ module.exports = function (server, app, session, passport) {
                 if (pval.chat.length === 1) {
                     chatStore.del("chat:"+socket.sitepower_id);
                 } else {
-                    delete pval.chat[pval.chat.indexOf(socket.id)];
+                    /*delete pval.chat[pval.chat.indexOf(socket.id)];*/
+                    pval.chat.splice(pval.chat.findIndex(e => e.chatId === socket.id),1);
                     pval.updated = moment().format();
                     sval = JSON.stringify(pval);
                     chatStore.set('chat:'+socket.sitepower_id, sval);
                 }
             });
-        });
+        }
         socket.on('print', function (msg) {
             debug("{PRINT}", socket.sitepower_id);
             chatStore.get("chat:"+socket.sitepower_id, (err, value) => {
@@ -291,7 +355,7 @@ module.exports = function (server, app, session, passport) {
 
 
                     if (recepient) {
-                        recepient.chat.forEach(item => io.to(item).emit("print", msg))
+                        recepient.chat.forEach(item => io.to(item.chatId).emit("print", msg))
                     }
                 })
                 // своим
@@ -303,8 +367,8 @@ module.exports = function (server, app, session, passport) {
 
                         if (recepient) {
                             recepient.chat.forEach(item => {
-                                if (item === socket.id) return;
-                                io.to(item).emit("print", msg)
+                                if (item.chatId === socket.id) return;
+                                io.to(item.chatId).emit("print", msg)
                             })
                         }
                     })

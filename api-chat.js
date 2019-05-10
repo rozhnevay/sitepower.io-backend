@@ -5,40 +5,6 @@ const fs = require('fs');
 const nodemailer = require('nodemailer');
 
 module.exports = function (app, authMiddleware) {
-    /*app.get("/api/chats", authMiddleware, (req, res) => {
-        debug("/api/chats");
-        db.getChatsByUserId(req.session.passport.user).then(chats => {
-            responseChats = [];
-            let cnt = 0;
-            for (let i = 0, l = chats.length; i < l; i++) {
-                let chat = chats[i];
-                mongodb.db("sitepower").collection("chats").findOne({_id:chat.sitepower_id}, (err, result) => {
-                    if (err) debug("/api/chats", "ERROR", err.message);
-                    let responseChat = {}
-                    responseChat.created = chat.created;
-                    responseChat.sitepower_id = chat.sitepower_id;
-                    responseChat.class = chat.class;
-                    responseChat.login = chat.login;
-                    responseChat.phone = chat.phone;
-                    responseChat.name = chat.full_name;
-                    responseChat.lastOpenDt = chat.last_open_dt;
-                    if (result && result.messages && result.messages.length > 0) {
-                        responseChat.messages = result.messages;
-                    }
-
-                    responseChats.push(responseChat);
-                    cnt++;
-                    if (cnt === l){
-                       res.send(responseChats);
-                    }
-                });
-            }
-        }).catch((err) => {
-            res.status(400).send("Cannot get chats");
-            debug("/api/chats", err.message);
-        });
-    })
-    */
     app.get("/api/chats", authMiddleware, (req, res) => {
         debug("/api/chats");
         let limit = req.query.limit ? req.query.limit : 50;
@@ -159,7 +125,6 @@ module.exports = function (app, authMiddleware) {
                                     html = html.replace("%%PROSPECT_REGION%%", "");
                                     html = html.replace("%%PROSPECT_PHONE%%", chat.phone ? chat.phone : "");
                                     html = html.replace("%%PROSPECT_EMAIL%%", chat.login ? chat.login : "");
-                                    let email = req.session.passport.user.login;
                                     sendChat(html, user.login);
                                     res.send("OK")
                                 } catch (e) {
@@ -176,7 +141,7 @@ module.exports = function (app, authMiddleware) {
     function getName(){
         var adjs = ["осенний", "скрытый", "горький", "туманный", "тихий", "пустой", "сухой","темный", "летний", "ледяной", "нежный", "тихий", "белый", "прохладный", "весенний","зимний", "сумеречный", "рассветный", "малиновый", "тоненький","выветрившийся","синий", "вздымающийся", "сломанный", "холодный", "влажный", "падающий", "морозный", "зеленый", "длинный", "поздний", "затяжной", "жирный", "маленький", "утренний", "грязный", "старый",  "красный", "грубый", "неподвижный", "маленький", "сверкающий", "пульсирующий", "застенчивый", "блуждающий", "увядший", "дикий", "черный", "молодой", "святой", "одинокий","ароматный", "выдержанный", "снежный", "гордый", "цветочный", "беспокойный", "божественный","полированный", "древний", "фиолетовый", "живой", "безымянный"]
 
-            , nouns = ["водопад", "ветер", "дождь", "снег", "закат", "лист", "рассвет", "блеск", "лес", "холм", "облако", "луг", "солнце","ручеек", "куст", "огонь", "цветок", "светлячок", "перо", "пруд","звук", "прибой",  "гром", "цветок","резонанс","лес", "туман", "мороз", "голос","дым"];
+            , nouns = ["водопад", "ветер", "дождь", "снег", "закат", "лист", "рассвет", "блеск", "лес", "холм", "луг", "ручеек", "куст", "огонь", "цветок", "светлячок", "пруд","звук", "прибой",  "гром", "цветок","резонанс","лес", "туман", "мороз", "голос","дым"];
 
         return jsUcfirst(adjs[Math.floor(Math.random()*(adjs.length-1))])+" "+jsUcfirst(nouns[Math.floor(Math.random()*(nouns.length-1))]);
     }
@@ -187,7 +152,7 @@ module.exports = function (app, authMiddleware) {
 
     const sendChat = (html, email) => {
         const transporter = nodemailer.createTransport({
-            host: process.env.MAILGUN_SMTP_SERVER,
+            host: process.env.SMTP_SERVER,
             auth: {
                 user: process.env.SMTP_LOGIN,
                 pass: process.env.SMTP_PASSWORD

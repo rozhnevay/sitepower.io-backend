@@ -44,7 +44,11 @@ module.exports = {
     getMessageById:getMessageById,
     getChatById:getChatById,
     getMessagesByChatId:getMessagesByChatId,
-    setRegionByChatId:setRegionByChatId
+    setRegionByChatId:setRegionByChatId,
+    createDeviceToken: createDeviceToken,
+    deleteDeviceToken: deleteDeviceToken,
+    getDeviceToken: getDeviceToken,
+    getUserDevices:getUserDevices
 };
 
 function getUserByLogin(login) {
@@ -53,7 +57,7 @@ function getUserByLogin(login) {
 
 function getUserById(id) {
     return db.one(`
-      select t.id, t.login, t.name, t.sitepower_id, t.parent_id, t.date_ending, t.created, t.updated, p.sitepower_id as parent_sitepower_id
+      select t.id, t.login, t.name, t.sitepower_id, t.parent_id, t.date_ending, t.created, t.updated, p.sitepower_id as parent_sitepower_id, t.pass
       from t_user t 
       left join t_user p on t.parent_id = p.id
       where t.id = $1`
@@ -85,7 +89,16 @@ function getFormsByUserId(user_id) {
 }
 
 function getOperators(user_id) {
-    return db.any('select login, name, admin, sitepower_id, created created from t_user where parent_id = $1', user_id);
+    return db.any(`select 
+                      login, 
+                      name, 
+                      case when parent_id is not null then 'Y' else 'N' end as admin, 
+                      sitepower_id, 
+                      created,
+                      case status when 1 then 'Активный' when 0 then 'Заблокирован' when -1 then 'Отправлено приглашение' else 'Удален' end as status
+                      from t_user 
+                      where parent_id = $1 
+                      or id = $1`, user_id);
 }
 
 function getFormByUserIdOrigin(user_id, origin) {
@@ -127,11 +140,11 @@ function getChatsByUserId(user_id, limit, before_id) {
             p.region
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
-        where p.user_id = $1 and (p.class <> $2 or p.class is null)
+        where p.user_id = $1 and ((p.class <> $2 and p.class <> $5) or p.class is null)
         and p.last_msg_id < $4
         order by p.last_msg_id desc, p.id desc
         limit $3
-		`, [user_id, 'SPAM', limit, before_id]);
+		`, [user_id, 'SPAM', limit, before_id, 'DELETED']);
 }
 
 function getChatBySpId(id) {
@@ -156,8 +169,8 @@ function getChatById(id) {
             p.region
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
-        where p.id = $1 and (p.class <> $2 or p.class is null)
-        `, [id, 'SPAM']);
+        where p.id = $1 and ((p.class <> $2 and p.class <> $3) or p.class is null)
+        `, [id, 'SPAM', 'DELETED']);
 }
 
 function getUserBySPId(sitepower_id) {
@@ -222,6 +235,31 @@ function createMessage(prospect_id, body, type, link, operator_id, direction) {
         ' values($1, $2, $3, $4, $5, $6) returning id', [prospect_id, body, type, link, operator_id, direction]);
 }
 
+function createDeviceToken(user_id, device_id, platform) {
+    return db.one('insert into t_user_device (user_id, device_id, platform)' +
+        ' values($1, $2, $3) returning id', [user_id, device_id, platform]);
+}
+
+function deleteDeviceToken(device_id) {
+    return db.none('delete from t_user_device where device_id = $1', device_id);
+}
+
+function getDeviceToken(device_id) {
+    return db.any(`select * from t_user_device where device_id = $1`, [device_id]);
+}
+
+function getUserDevices(user_id) {
+    console.log("getUserDevices user_id = " + user_id);
+    return db.any(`
+        select
+            d.device_id
+        from t_user_device d
+        inner join t_user u on d.user_id = u.id
+        inner join t_user par on (u.parent_id = par.id or u.id = par.id)
+        where par.id = $1
+		`, user_id);
+}
+
 function getMessageById(id) {
     console.log("getMessageById id = " + id);
     return db.one(`
@@ -233,7 +271,7 @@ function getMessageById(id) {
             m.link,
             m.direction,
             m.operator_id,
-            o.name,
+            o.name as operator_name,
             case when m.direction = 'from_user' then p.sitepower_id else u.sitepower_id end recepient_id,
             case when m.direction = 'from_user' then u.sitepower_id else p.sitepower_id end sender_id
         from t_msg m

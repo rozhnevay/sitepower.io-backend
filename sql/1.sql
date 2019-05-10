@@ -122,3 +122,40 @@ create index t_prospect_operator_id_index
 
 ALTER TABLE t_prospect ADD COLUMN region varchar(1000);
 /*     DONE       */
+
+create sequence t_user_device_id_seq
+  as integer
+  maxvalue 2147483647;
+
+alter sequence t_user_device_id_seq owner to postgres;
+
+
+create table t_user_device (
+  id integer DEFAULT nextval('t_user_device_id_seq'::regclass),
+  user_id integer not null,
+  device_id varchar(100) not null,
+  platform  varchar(100) not null,
+  created TIMESTAMPTZ default now() not null,
+)
+
+create index t_user_device_user_id_index
+	on t_user_device (user_id asc);
+
+create index t_user_device_device_id_index
+	on t_user_device (device_id asc);
+
+alter table t_user_device
+	add constraint t_user_device_pk
+		primary key (id);
+
+create unique index t_user_device_uindex
+  on t_user_device (device_id);
+
+alter table t_user_device alter column device_id type varchar(2000);
+
+alter table t_user add column status int default 1;
+
+create index t_msg_operator_index
+  on t_msg (operator_id);
+
+alter table t_user drop column admin;

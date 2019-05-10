@@ -77,7 +77,7 @@ module.exports = function (app, authMiddleware) {
                         db.createOperator(req.body.login, hash, req.session.passport.user).then((operator) => {
                             /*TODO: отправка письма - приглашения!!!*/
                             debug("/api/operator/ POST", "operator_id", operator.id);
-                            db.getUserById(operator.id).then((user) => {
+                            return db.getUserById(operator.id).then((user) => {
                                 sendRegOperatorLink(user, data, process.env.DOMAIN)
                                 res.send("OK");
                             }).catch(err => res.status(400).send(err.message))
@@ -103,21 +103,26 @@ module.exports = function (app, authMiddleware) {
             })
         }
     })
-    app.post('/api/operator/create', function(req, res) {
-        db.getUserById(req.body.id).then((user) => {
-                const payload = jwt.decode(req.body.token, user.pass + "-" + user.created.getTime());
-                console.log("req.body.id = " + req.body.id);
-                console.log("req.body.password = " + req.body.password);
-                bcrypt.genSalt(10, function(err, salt) {
-                    bcrypt.hash(req.body.password, salt, function (err, hash) {
-                        if (err) return res.status(400).send(err.message);
-                        db.updateUserNamePassword(req.body.id, req.body.name, hash).then(() =>
-                            res.send('<h1>Your register has been successfully</h1>')
-                        ).catch((err) => res.status(400).send(err.message))
-                    });
-                })
-            }
-        ).catch((err) => res.status(400).send(err.message));
+    fs.readFile("./views/reg_operator_ok.html", (err, data) => {
+        if (err) debug("{reg_operator}", err.message)
+        if (data) {
+            app.post('/api/operator/create', function(req, res) {
+                db.getUserById(req.body.id).then((user) => {
+                        const payload = jwt.decode(req.body.token, user.pass + "-" + user.created.getTime());
+                        console.log("req.body.id = " + req.body.id);
+                        console.log("req.body.password = " + req.body.password);
+                        bcrypt.genSalt(10, function(err, salt) {
+                            bcrypt.hash(req.body.password, salt, function (err, hash) {
+                                if (err) return res.status(400).send(err.message);
+                                db.updateUserNamePassword(req.body.id, req.body.name, hash).then(() =>
+                                    res.send(data.toString())
+                                ).catch((err) => res.status(400).send(err.message))
+                            });
+                        })
+                    }
+                ).catch((err) => res.status(400).send(err.message));
 
-    });
+            });
+        }
+    })
 }

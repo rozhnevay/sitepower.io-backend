@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const jwt = require('jwt-simple');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
+const debug = require('debug')('sitepower.io-backend:api-auth');
 
 module.exports = function (app, authMiddleware, passport) {
 
@@ -55,24 +56,29 @@ module.exports = function (app, authMiddleware, passport) {
             id: user.id,
             email: user.login
         }
-        const secret = user.pass + "-" + user.created.getTime();
+        const secret = user.pass + "-" + user.created
+
         const token = jwt.encode(payload, secret);
+        console.log("token = " + token);
+        console.log("secret = " + user.pass + "-" + user.created);
+        jwt.decode(token, user.pass + "-" + user.created);
+
         const transporter = nodemailer.createTransport({
-            host: process.env.MAILGUN_SMTP_SERVER,
+            host: process.env.SMTP_SERVER,
             auth: {
                 user: process.env.SMTP_LOGIN,
                 pass: process.env.SMTP_PASSWORD
             }
         });
         let lnk = "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token;
-        let logo = "http://" + process.env.DOMAIN + "/static/logo-black.svg";
+        let logo = "https://app.sitepower.io/static/logo-black.png";
         const mailOptions = {
             from: process.env.SMTP_LOGIN,
             to: payload.email,
             subject: 'sitepower.io: Password Reset',
             html:`
                 <center>
-                <div style="border-radius:10px 10px 0px 0px;background-color:black;width:600px;margin-top:30px">
+                <div style="border-radius:10px 10px 0px 0px;width:600px;margin-top:30px">
                         <img src="${logo}" width=\'301px\' style=\'margin-top:51px;\'>
                         <p style="font-size:18px;color:white;padding-bottom: 65px;font-weight: bold;margin: 0;">Восстановление пароля</p>
                     </div>
@@ -101,7 +107,10 @@ module.exports = function (app, authMiddleware, passport) {
         if (data) {
             app.get("/api/resetpassword/:id/:token", (req, res) => {
                 db.getUserById(req.params.id).then((user) => {
-                    const payload = jwt.decode(req.params.token, user.pass + "-" + user.created.getTime());
+                    debug("params", req.params);
+                    console.log("token = " + req.params.token);
+                    console.log("secret = " + user.pass + "-" + user.created);
+                    jwt.decode(req.params.token, user.pass + "-" + user.created);
                     let html = data.toString().replace("%%DOMAIN%%", process.env.DOMAIN);
                     html = html.replace("%%ID%%", req.params.id);
                     html = html.replace("%%TOKEN%%", req.params.token);
@@ -119,7 +128,7 @@ module.exports = function (app, authMiddleware, passport) {
         if (data) {
             app.post('/api/resetpassword', function(req, res) {
                 db.getUserById(req.body.id).then((user) => {
-                        const payload = jwt.decode(req.body.token, user.pass + "-" + user.created.getTime());
+                        const payload = jwt.decode(req.body.token, user.pass + "-" + user.created);
                         bcrypt.genSalt(10, function(err, salt) {
                             bcrypt.hash(req.body.password, salt, function (err, hash) {
                                 if (err) {
@@ -165,5 +174,37 @@ module.exports = function (app, authMiddleware, passport) {
         } else {
             throw "Email address is missing";
         }
+    })
+
+    app.get("/api/device/:token", authMiddleware, (req, res) => {
+        debug("/api/device/:token", "GET", req.params.token);
+        db.getDeviceToken(req.params.token)
+            .then(data => {
+                res.send(data[0])
+            })
+            .catch(err => {
+                debug("/api/device/:token", req.session.passport.user, err.message);
+                res.status(400).send("Cannot get token");
+            })
+    })
+
+    app.post("/api/device", authMiddleware, (req, res) => {
+        debug("/api/device", "POST", req.body)
+        db.createDeviceToken(req.session.passport.user, req.body.token, req.body.platform)
+            .then(() => res.send("OK"))
+            .catch(err => {
+                debug("/api/device", req.session.passport.user, err.message);
+                res.status(400).send("Error on creating token");
+            })
+    })
+
+    app.delete("/api/device/:token", authMiddleware, (req, res) => {
+        debug("/api/device", "DELETE", req.params.token);
+        db.deleteDeviceToken(req.params.token)
+            .then(() => res.send("OK"))
+            .catch(err => {
+                debug("/api/device", "DELETE", req.params.token);
+                res.status(400).send("Error on deleting token");
+            })
     })
 }
