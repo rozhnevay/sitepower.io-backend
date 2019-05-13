@@ -72,14 +72,16 @@ module.exports = function (app, authMiddleware) {
             res.status(400).send("IP not in list!");
             return;
         }
-        debug("/api/payment", "IP OK!!!");
+
 
         return db.updatePaymentByYaId(req.body.object.id, req.body.object.status)
             .then(() => {
+                debug("/api/payment", "BEFORE CHECK", req.body);
                 if (!req.body.object.paid) {
                     res.send("OK");
                     return;
                 }
+                debug("/api/payment", "ALL OK");
                 return db.getPaymentByYaId(req.body.object.id)
                     .then((payment) => {
                         const daysInc = parseInt(payment.cnt_days)*parseInt(payment.cnt_operators);
