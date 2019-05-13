@@ -52,7 +52,12 @@ module.exports = {
     blockOperator:blockOperator,
     insertJobLog:insertJobLog,
     getOperatorsCountByUser:getOperatorsCountByUser,
-    decrementDaysAmount:decrementDaysAmount
+    decrementDaysAmount:decrementDaysAmount,
+    incrementDaysAmount:incrementDaysAmount,
+    createPayment:createPayment,
+    updatePayment:updatePayment,
+    updatePaymentByYaId:updatePaymentByYaId,
+    getPaymentByYaId:getPaymentByYaId
 };
 
 function getUserByLogin(login) {
@@ -349,5 +354,25 @@ function decrementDaysAmount(user_id, cnt) {
     `, [user_id, parseInt(cnt)]);
 };
 
+function incrementDaysAmount(user_id, cnt) {
+    return db.none(`
+     update t_user set days_amount = days_amount + $2 where id = $1
+    `, [user_id, parseInt(cnt)]);
+};
+
+function createPayment (user_id, cnt_operators, cnt_days, amount) {
+    return db.one('insert into t_payment (user_id, cnt_operators, cnt_days, amount) values($1, $2, $3, $4) returning sitepower_id', [user_id, cnt_operators, cnt_days, amount]);
+}
+
+function updatePayment (sitepower_id, ya_id, status) {
+    return db.none(`update t_payment set ya_id = $2, status=$3 where sitepower_id=$1`, [sitepower_id, ya_id, status]);
+}
+
+function updatePaymentByYaId (ya_id, status) {
+    return db.none(`update t_payment set status=$2 where ya_id=$1`, [ya_id, status]);
+}
 
 
+function getPaymentByYaId (ya_id) {
+    return db.one(`select * from t_payment where ya_id=$1`, ya_id);
+}

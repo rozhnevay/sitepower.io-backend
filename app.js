@@ -122,6 +122,8 @@ require('./api-upload')(app, authMiddleware); // Upload
  // Socket API
 require('./api-chat')(app, authMiddleware); // Chat API
 
+require('./api-pay')(app, authMiddleware); // Pay API
+
 
 //* Планировщик для списания дней *//
 let rule = new schedule.RecurrenceRule();

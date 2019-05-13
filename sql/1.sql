@@ -159,7 +159,7 @@ create index t_msg_operator_index
   on t_msg (operator_id);
 
 alter table t_user drop column admin;
-/*     DONE       */
+
 alter table t_user drop column date_ending;
 alter table t_user add column days_amount int default 30;
 update t_user set days_amount = -1 where parent_id is not null;
@@ -176,3 +176,37 @@ ALTER TABLE t_form drop column label;
 ALTER TABLE t_form add column label VARCHAR(100) DEFAULT 'Напишите нам!' not null;
 
 ALTER TABLE t_form add column test VARCHAR(1) DEFAULT 'N';
+/*     DONE       */
+
+create sequence t_payment_id_seq
+  as integer
+  maxvalue 2147483647;
+
+alter sequence t_payment_id_seq owner to postgres;
+
+
+CREATE TABLE t_payment (
+     id integer DEFAULT nextval('t_payment_id_seq'::regclass),
+     created TIMESTAMPTZ default now() not null,
+     sitepower_id varchar(36) DEFAULT uuid_generate_v1(),
+     cnt_operators integer,
+     cnt_days integer,
+     amount numeric(22,2)
+);
+create index t_payment_index
+  on t_payment (sitepower_id);
+
+create unique index t_payment_id_index
+  on t_payment (id);
+ALTER TABLE t_payment add column status int DEFAULT 0;
+
+ALTER TABLE t_payment add column user_id int not null;
+create index t_payment_user_id_index
+  on t_payment (user_id);
+
+ALTER TABLE t_payment add column ya_id varchar(36);
+create index t_payment_ya_id_index
+  on t_payment (ya_id);
+
+ALTER TABLE t_payment drop column status;
+ALTER TABLE t_payment add column status varchar(100)  default 'new';
