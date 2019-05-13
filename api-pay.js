@@ -60,13 +60,13 @@ module.exports = function (app, authMiddleware) {
         const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress
         debug("/api/payment", "ip", ip);
         if (
-            !ipRangeCheck(ip, "185.71.76.0/27")||
-            !ipRangeCheck(ip, "185.71.77.0/27")||
-            !ipRangeCheck(ip, "77.75.153.0/25")||
-            !ipRangeCheck(ip, "77.75.154.128/25")||
-            !ipRangeCheck(ip, "2a02:5180:0:1509::/64")||
-            !ipRangeCheck(ip, "2a02:5180:0:2655::/64")||
-            !ipRangeCheck(ip, "2a02:5180:0:1533::/64")||
+            !ipRangeCheck(ip, "185.71.76.0/27") &&
+            !ipRangeCheck(ip, "185.71.77.0/27") &&
+            !ipRangeCheck(ip, "77.75.153.0/25") &&
+            !ipRangeCheck(ip, "77.75.154.128/25") &&
+            !ipRangeCheck(ip, "2a02:5180:0:1509::/64")&&
+            !ipRangeCheck(ip, "2a02:5180:0:2655::/64")&&
+            !ipRangeCheck(ip, "2a02:5180:0:1533::/64")&&
             !ipRangeCheck(ip, "2a02:5180:0:2669::/64")
         ) {
             res.status(400).send("IP not in list!");
