@@ -23,7 +23,7 @@ module.exports = function (app, authMiddleware) {
                         capture: true,
                         confirmation: {
                             type: "redirect",
-                            return_url: "https://app.sitepower.io/private/admin"
+                            return_url: "https://app.sitepower.io/private/payments"
                         },
                         description: "Оплата лицензий Sitepower"
                     },
@@ -58,6 +58,7 @@ module.exports = function (app, authMiddleware) {
 
     app.post("/api/payment", (req, res) => {
         const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress
+        debug("/api/payment", "ip", ip);
         if (
             !ipRangeCheck(ip, "185.71.76.0/27")||
             !ipRangeCheck(ip, "185.71.77.0/27")||
@@ -71,6 +72,7 @@ module.exports = function (app, authMiddleware) {
             res.status(400).send("IP not in list!");
             return;
         }
+        debug("/api/payment", "IP OK!!!");
 
         return db.updatePaymentByYaId(req.body.object.id, req.body.object.status)
             .then(() => {
