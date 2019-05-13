@@ -48,18 +48,35 @@ module.exports = {
     createDeviceToken: createDeviceToken,
     deleteDeviceToken: deleteDeviceToken,
     getDeviceToken: getDeviceToken,
-    getUserDevices:getUserDevices
+    getUserDevices:getUserDevices,
+    blockOperator:blockOperator,
+    insertJobLog:insertJobLog,
+    getOperatorsCountByUser:getOperatorsCountByUser,
+    decrementDaysAmount:decrementDaysAmount
 };
 
 function getUserByLogin(login) {
-    return db.one('select * from t_user where login = $1', login);
+    return db.one(`
+      select t.id, t.login, t.name, t.sitepower_id, t.parent_id, 
+      t.created, t.updated, 
+      p.sitepower_id as parent_sitepower_id, t.pass,
+      t.days_amount,
+      f.sitepower_id test_form_id
+      from t_user t 
+      left join t_user p on t.parent_id = p.id
+      left join t_form f on f.user_id = t.id and f.test = 'Y'
+      where t.login = $1`, login);
 }
 
 function getUserById(id) {
     return db.one(`
-      select t.id, t.login, t.name, t.sitepower_id, t.parent_id, t.date_ending, t.created, t.updated, p.sitepower_id as parent_sitepower_id, t.pass
+      select t.id, t.login, t.name, t.sitepower_id, t.parent_id, 
+      t.created, t.updated, p.sitepower_id as parent_sitepower_id, 
+      t.pass, t.days_amount,
+      f.sitepower_id test_form_id
       from t_user t 
       left join t_user p on t.parent_id = p.id
+      left join t_form f on f.user_id = t.id and f.test = 'Y'
       where t.id = $1`
     , id);
 }
@@ -68,7 +85,7 @@ function createUser(login, pass, name) {
     return db.one('insert into t_user(login, pass, name) values($1, $2, $3) returning id', [login, pass, name]);
 }
 function createOperator(login, pass, user_id) {
-    return db.one('insert into t_user(login, pass, parent_id, admin) values($1, $2, $3, 0) returning id', [login, pass, user_id]);
+    return db.one('insert into t_user(login, pass, parent_id, status, days_amount) values($1, $2, $3, -1, -1) returning id', [login, pass, user_id]);
 }
 
 function updateUserPassword(user_id, pass) {
@@ -85,20 +102,26 @@ function updateUserChatId(user_id, chat_id) {
 }
 
 function getFormsByUserId(user_id) {
-    return db.any('select id, origin, color, gradient, label, position, message_placeholder, sitepower_id, created from t_form where user_id = $1', user_id);
+    return db.any('select id, origin, color, gradient, label, position, message_placeholder, sitepower_id, created, test from t_form where user_id = $1', user_id);
 }
 
 function getOperators(user_id) {
     return db.any(`select 
                       login, 
                       name, 
-                      case when parent_id is not null then 'Y' else 'N' end as admin, 
+                      case when parent_id is not null then 'N' else 'Y' end as admin, 
                       sitepower_id, 
                       created,
                       case status when 1 then 'Активный' when 0 then 'Заблокирован' when -1 then 'Отправлено приглашение' else 'Удален' end as status
                       from t_user 
                       where parent_id = $1 
-                      or id = $1`, user_id);
+                      or id = $1
+                      order by status, created
+                      `, user_id);
+}
+
+function blockOperator(id, block) {
+    return db.none('update t_user set status = case when $2 then 0 else 1 end where sitepower_id = $1', [id, block]);
 }
 
 function getFormByUserIdOrigin(user_id, origin) {
@@ -113,13 +136,13 @@ function getFormById(id) {
     return db.one('select * from t_form where id = $1', id);
 }
 
-function createForm(user_id, origin) {
-    return db.one('insert into t_form(user_id, origin) values($1, $2) returning id', [user_id, origin]);
+function createForm(user_id, origin, test) {
+    return db.one('insert into t_form(user_id, origin, test) values($1, $2, $3) returning id', [user_id, origin, test]);
 }
 
 function updateForm(id, user_id, form) {
     debug("updateForm", user_id, id, JSON.stringify(form));
-    return db.none('update t_form set color = $3, gradient = $4, label = $5, position = $6, message_placeholder = $7 where user_id=$1 AND id = $2', [user_id, id, form.color, form.gradient, form.label, form.position, form.message_placeholder]);
+    return db.none('update t_form set color = $3, gradient = $4, label = $5, message_placeholder = $6 where user_id=$1 AND id = $2', [user_id, id, form.color, form.gradient, form.label, form.message_placeholder]);
 }
 
 function getChatsByUserId(user_id, limit, before_id) {
@@ -303,3 +326,28 @@ function getMessagesByChatId(sitepower_id) {
         'where p.sitepower_id = $1 ' +
         'order by m.id asc', sitepower_id);
 }
+
+function insertJobLog(info) {
+    return db.none(`insert into t_job_log(info) values ($1)`, info);
+}
+
+function getOperatorsCountByUser() {
+    return db.any(`
+     select
+            u.id,
+            count(1) as cnt
+        from t_user u
+        inner join t_user o on o.parent_id = u.id or o.id = u.id
+        where u.days_amount > 0
+        group by u.id
+    `);
+};
+
+function decrementDaysAmount(user_id, cnt) {
+    return db.none(`
+     update t_user set days_amount = greatest(0, days_amount - $2) where id = $1
+    `, [user_id, parseInt(cnt)]);
+};
+
+
+

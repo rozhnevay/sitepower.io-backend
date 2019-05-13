@@ -136,7 +136,7 @@ create table t_user_device (
   device_id varchar(100) not null,
   platform  varchar(100) not null,
   created TIMESTAMPTZ default now() not null,
-)
+);
 
 create index t_user_device_user_id_index
 	on t_user_device (user_id asc);
@@ -159,3 +159,20 @@ create index t_msg_operator_index
   on t_msg (operator_id);
 
 alter table t_user drop column admin;
+/*     DONE       */
+alter table t_user drop column date_ending;
+alter table t_user add column days_amount int default 30;
+update t_user set days_amount = -1 where parent_id is not null;
+create table t_job_log (
+  created TIMESTAMPTZ default now() not null,
+  info JSON
+);
+ALTER TABLE t_form drop column color;
+ALTER TABLE t_form drop column gradient;
+ALTER TABLE t_form add column color VARCHAR(100) DEFAULT 'sitepower' not null;
+ALTER TABLE t_form add column gradient int DEFAULT 1 not null;
+
+ALTER TABLE t_form drop column label;
+ALTER TABLE t_form add column label VARCHAR(100) DEFAULT 'Напишите нам!' not null;
+
+ALTER TABLE t_form add column test VARCHAR(1) DEFAULT 'N';

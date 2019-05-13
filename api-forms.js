@@ -15,7 +15,7 @@ module.exports = function (app, authMiddleware) {
     })
 
     app.post("/api/form", authMiddleware, (req, res) => {
-        db.createForm(req.session.passport.user, req.body.origin).then(id => res.send(id)).catch((err) => res.status(400).send(err.message));
+        db.createForm(req.session.passport.user, req.body.origin, 'N').then(id => res.send(id)).catch((err) => res.status(400).send(err.message));
     })
 
     app.post("/api/form/:id", authMiddleware, (req, res) => {
@@ -27,7 +27,15 @@ module.exports = function (app, authMiddleware) {
         debug("/api/operators/ GET", JSON.stringify(req.body));
         db.getOperators(req.session.passport.user).then((operators) => res.send(operators)).catch((err) => res.status(400).send(err.message));
     })
-
+    app.post("/api/operator/:id/block", authMiddleware, (req, res) => {
+        debug("/api/operator/:id/block", "BLOCK", req.params.id, req.body);
+        db.blockOperator(req.params.id, req.body.block)
+            .then(() => res.send("OK"))
+            .catch(err => {
+                debug("/api/operator/:id/block", "BLOCK", req.params.id, req.body, err.message);
+                res.status(400).send("Error on blocking operator");
+            })
+    })
 
 
 
@@ -39,7 +47,7 @@ module.exports = function (app, authMiddleware) {
         const secret = user.pass + "-" + user.created.getTime();
         const token = jwt.encode(payload, secret);
 
-        const html = data.toString().replace(/%%LINK%%/g, "http://" + process.env.DOMAIN + "/api/operator/"+ payload.id + "/" + token);
+        const html = data.toString().replace(/%%LINK%%/g, process.env.DOMAIN + "/api/operator/"+ payload.id + "/" + token);
         var transporter = nodemailer.createTransport({
             host: process.env.SMTP_SERVER,
             auth: {
@@ -103,6 +111,19 @@ module.exports = function (app, authMiddleware) {
             })
         }
     })
+
+    fs.readFile("./views/chat_test.html", (err, data) => {
+        if (err) debug("{chat_test}", err.message)
+        if (data) {
+            app.get("/page/:id", (req, res) => {
+                debug("/page/:id GET", req.params.id);
+                let html = data.toString().replace("%%DOMAIN%%", process.env.DOMAIN);
+                html = html.replace("%%WIDGET_ID%%", req.params.id);
+                res.send(html);
+            })
+        }
+    })
+
     fs.readFile("./views/reg_operator_ok.html", (err, data) => {
         if (err) debug("{reg_operator}", err.message)
         if (data) {

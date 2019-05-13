@@ -57,13 +57,13 @@ module.exports = function (server, app, session, passport) {
         return next();
     });
     io.on('connect', function (socket) {
-        debug("{CONNECT START Auth}", socket.handshake.query);
+        debug("{CONNECT START Auth}", socket.handshake.query, socket.handshake.headers);
 
         let connection = {
             prospectSpId    : socket.handshake.query.sitepower_id,
             userSpId        : socket.request.user.parent_sitepower_id ? socket.request.user.parent_sitepower_id : socket.request.user.sitepower_id,
             origin          : socket.handshake.headers.origin,
-            formattedOrigin : socket.handshake.headers.origin ? extractHostname(socket.handshake.headers.origin) : "",
+            formattedOrigin : socket.handshake.headers.origin ? extractHostname(socket.handshake.headers.origin) : "localhost:63342",
             chatId          : socket.client.id,
             deviceId        : socket.handshake.query.device_id
         }
@@ -78,10 +78,13 @@ module.exports = function (server, app, session, passport) {
                     return db.getFormByUserIdOrigin(user.id, connection.formattedOrigin).then(() =>{
                         debug("{CONNECT OK getFormByUserIdOrigin}", scon)
                         try {
-                            const localTime = new Date();
+                            /*const localTime = new Date();
                             const endingDate = new Date(user.date_ending);
                             //const diff = endingDate.diff(localTime, 'days');
                             if (endingDate < localTime) {
+                                disconnect("Agreement is Ended!");
+                            }*/
+                            if (user.days_amount < 1) {
                                 disconnect("Agreement is Ended!");
                             }
                             chatStore.set('chat:'+connection.prospectSpId, JSON.stringify({chat: [{chatId: connection.chatId}], type: "prospect", origin:connection.origin, recepient_id: user.sitepower_id, created: moment().format(), updated: moment().format()}));

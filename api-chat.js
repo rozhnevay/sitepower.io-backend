@@ -83,21 +83,38 @@ module.exports = function (app, authMiddleware) {
         debug("/api/prospect/:id", req.params.id);
         res.header("Access-Control-Allow-Origin", req.headers.origin);
         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-        db.getFormBySpId(req.params.id).then(qres =>
-            db.getUserById(qres.user_id).then(
-                user => db.createProspect(user.id, getName()).then(
-                    prospect => {
-                        debug("/api/prospect/:id", JSON.stringify(prospect));
-                        res.send({sitepower_id: prospect.sitepower_id})
-                    }
+        db.getFormBySpId(req.params.id).then(qres => {
+                debug("/api/prospect/:id", qres)
+                db.getUserById(qres.user_id).then(
+                    user => db.createProspect(user.id, getName(qres.test)).then(
+                        prospect => {
+                            debug("/api/prospect/:id", JSON.stringify(prospect));
+                            res.send({sitepower_id: prospect.sitepower_id})
+                        }
+                    ).catch(err => new Error(err))
                 ).catch(err => new Error(err))
-            ).catch(err => new Error(err))
+            }
         ).catch(err => {
             res.status(400).send("Cannot get prospect sitepower_id for " + req.params.id);
             debug("/api/prospect/:id", req.params.id, err.message);
         })
 
     })
+
+    app.get("/api/prospect/form/:id", (req, res) => {
+        debug("/api/prospect/form/:id", req.params.id);
+        res.header("Access-Control-Allow-Origin", req.headers.origin);
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        db.getFormBySpId(req.params.id).then(qres => {
+                            res.send({label:qres.label, color:qres.color, gradient: qres.gradient, message_placeholder: qres.message_placeholder})
+        }).catch(err => {
+            res.status(400).send("Cannot get prospect sitepower_id for " + req.params.id);
+            debug("/api/prospect/:id", req.params.id, err.message);
+        })
+    })
+
+
+
     fs.readFile("./views/mail_chat.html", (err, data) => {
         if (err) debug("/api/chat/:id/send", err.message)
         if (data) {
@@ -138,7 +155,8 @@ module.exports = function (app, authMiddleware) {
         }
     })
 
-    function getName(){
+    function getName(test){
+        if (test === "Y") return "Тест Тестович";
         var adjs = ["осенний", "скрытый", "горький", "туманный", "тихий", "пустой", "сухой","темный", "летний", "ледяной", "нежный", "тихий", "белый", "прохладный", "весенний","зимний", "сумеречный", "рассветный", "малиновый", "тоненький","выветрившийся","синий", "вздымающийся", "сломанный", "холодный", "влажный", "падающий", "морозный", "зеленый", "длинный", "поздний", "затяжной", "жирный", "маленький", "утренний", "грязный", "старый",  "красный", "грубый", "неподвижный", "маленький", "сверкающий", "пульсирующий", "застенчивый", "блуждающий", "увядший", "дикий", "черный", "молодой", "святой", "одинокий","ароматный", "выдержанный", "снежный", "гордый", "цветочный", "беспокойный", "божественный","полированный", "древний", "фиолетовый", "живой", "безымянный"]
 
             , nouns = ["водопад", "ветер", "дождь", "снег", "закат", "лист", "рассвет", "блеск", "лес", "холм", "луг", "ручеек", "куст", "огонь", "цветок", "светлячок", "пруд","звук", "прибой",  "гром", "цветок","резонанс","лес", "туман", "мороз", "голос","дым"];

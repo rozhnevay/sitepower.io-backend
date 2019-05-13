@@ -27,7 +27,7 @@ module.exports = function (app, authMiddleware) {
                 if (err) res.send("Error on uploading");
                 if (data) {
                     console.log("Uploaded in:", data.Location);
-                    db.uploadFile(params.Key, filename).then(r => res.send({url:"http://" + process.env.DOMAIN + "/api/download/" + r.uuid, file:filename})).catch(err => {
+                    db.uploadFile(params.Key, filename).then(r => res.send({url:process.env.DOMAIN + "/api/download/" + r.uuid, file:filename})).catch(err => {
                         console.log(err.message);
                         res.send("Error on uploading")
                     });

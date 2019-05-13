@@ -18,7 +18,7 @@ module.exports = function (app, authMiddleware, passport) {
             }
 
             req.login(user, err => {
-                res.send({id: user.id, login: user.login, name: user.name, created: user.created, sitepower_id: user.sitepower_id});
+                res.send({id: user.id, login: user.login, name: user.name, created: user.created, sitepower_id: user.sitepower_id, parent_sitepower_id:user.parent_sitepower_id, days_amount: user.days_amount, test_form_id: user.test_form_id});
             });
 
         })(req, res, next);
@@ -33,7 +33,7 @@ module.exports = function (app, authMiddleware, passport) {
     });
 
     app.get("/api/user", authMiddleware, (req, res) => {
-        db.getUserById(req.session.passport.user).then(user => res.send({ user: {id: user.id, login: user.login, name: user.name, created: user.created, sitepower_id: user.sitepower_id} }));
+        db.getUserById(req.session.passport.user).then(user => res.send({ user: {id: user.id, login: user.login, name: user.name, created: user.created, sitepower_id: user.sitepower_id, parent_sitepower_id:user.parent_sitepower_id, days_amount: user.days_amount, test_form_id: user.test_form_id} }));
     })
 
     app.post('/api/register', function(req, res, next) {
@@ -42,8 +42,10 @@ module.exports = function (app, authMiddleware, passport) {
             bcrypt.hash(req.body.password, salt, function(err, hash) {
                 if (err) return next(err);
                 db.createUser(req.body.email, hash, req.body.name).then((data) => {
-                    db.getUserById(data.id).then((user) => {
-                        req.login(user, err => res.send(user));
+                    return db.getUserById(data.id).then((user) => {
+                        return db.createForm(user.id, process.env.HOST, 'Y').then(() => {
+                            req.login(user, err => res.send(user));
+                        }).catch((err) => res.status(400).send(err.toString()))
                     }).catch((err) => res.status(400).send(err.toString()))
                 }).catch((err) => res.status(400).send(err.toString()));
             });
@@ -70,7 +72,7 @@ module.exports = function (app, authMiddleware, passport) {
                 pass: process.env.SMTP_PASSWORD
             }
         });
-        let lnk = "http://" + process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token;
+        let lnk = process.env.DOMAIN + "/api/resetpassword/" + payload.id + "/" + token;
         let logo = "https://app.sitepower.io/static/logo-black.png";
         const mailOptions = {
             from: process.env.SMTP_LOGIN,
