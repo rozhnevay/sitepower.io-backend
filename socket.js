@@ -63,7 +63,7 @@ module.exports = function (server, app, session, passport) {
             prospectSpId    : socket.handshake.query.sitepower_id,
             userSpId        : socket.request.user.parent_sitepower_id ? socket.request.user.parent_sitepower_id : socket.request.user.sitepower_id,
             origin          : socket.handshake.headers.origin,
-            formattedOrigin : socket.handshake.headers.origin ? extractHostname(socket.handshake.headers.origin) : process.env.NODE_ENV === "production" ? "sitepower.herokuapp.com" : "localhost:63342",
+            formattedOrigin : socket.handshake.headers.origin ? extractHostname(socket.handshake.headers.origin) : process.env.NODE_ENV === "production" ? "ws.sitepower.io" : "localhost:63342",
             chatId          : socket.client.id,
             deviceId        : socket.handshake.query.device_id
         }

@@ -176,7 +176,7 @@ ALTER TABLE t_form drop column label;
 ALTER TABLE t_form add column label VARCHAR(100) DEFAULT 'Напишите нам!' not null;
 
 ALTER TABLE t_form add column test VARCHAR(1) DEFAULT 'N';
-/*     DONE       */
+
 
 create sequence t_payment_id_seq
   as integer
@@ -210,3 +210,4 @@ create index t_payment_ya_id_index
 
 ALTER TABLE t_payment drop column status;
 ALTER TABLE t_payment add column status varchar(100)  default 'new';
+/*     DONE       */
