@@ -623,7 +623,7 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
                     $('#sitepower .chatbox__title__full').addClass('color-' + data.color);
 
 
-                    if ($contMin.is(':hidden') && $contFull.is(':hidden')) {
+                    if ($contMin.is(':hidden') && $contFull.is(':hidden') && socket.connected) {
                         $contMin.show();
                     }
                 }).fail(function (err) {console.log(err.message)});
