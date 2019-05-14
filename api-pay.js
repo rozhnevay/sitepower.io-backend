@@ -29,7 +29,7 @@ module.exports = function (app, authMiddleware) {
                     },
                     {
                         auth: {
-                            username:604823,
+                            username:process.env.YA_SHOP_ID,
                             password:process.env.YA_SECRET
                         },
                         headers: {
