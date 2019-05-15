@@ -1,3 +1,4 @@
+const axios = require('axios');
 const db = require('./queries');
 const debug = require('debug')('sitepower.io-backend:api-chat');
 const moment = require('moment');
@@ -71,35 +72,71 @@ module.exports = function (app, authMiddleware) {
 
     })
 
-    app.post("/api/prospect/geo/:id", (req, res) => {
+    /*app.post("/api/prospect/geo/:id", (req, res) => {
         debug("/api/prospect/geo/:id", req.params.id);
         res.header("Access-Control-Allow-Origin", req.headers.origin);
         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
         db.setRegionByChatId(req.params.id, req.body.region).then(() => res.send("OK")).catch((err) => {res.status(400).send("Error on settin region")});
 
-    })
-    /* TODO!!! Продумать проверку на Origin и ограничение на кол-во запросов в день (не больше тысчяи)*/
-    app.get("/api/prospect/:id", (req, res) => {
+    })*/
+    app.post("/api/prospect/get/:id", (req, res) => {
         debug("/api/prospect/:id", req.params.id);
         res.header("Access-Control-Allow-Origin", req.headers.origin);
         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-        db.getFormBySpId(req.params.id).then(qres => {
-                debug("/api/prospect/:id", qres)
-                db.getUserById(qres.user_id).then(
-                    user => db.createProspect(user.id, getName(qres.test)).then(
-                        prospect => {
-                            debug("/api/prospect/:id", JSON.stringify(prospect));
-                            res.send({sitepower_id: prospect.sitepower_id})
-                        }
-                    ).catch(err => new Error(err))
-                ).catch(err => new Error(err))
-            }
-        ).catch(err => {
-            res.status(400).send("Cannot get prospect sitepower_id for " + req.params.id);
-            debug("/api/prospect/:id", req.params.id, err.message);
-        })
+        return db.getFormBySpId(req.params.id).then(qres => {
+            debug("/api/prospect/:id/:prospect_id", qres)
 
+            return db.getUserById(qres.user_id)
+                .then(
+                    user => {
+
+                        return db.getChatBySpId(req.body.prospect_id)
+                            .then(prospect => {
+                                debug("/api/prospect/:id", JSON.stringify(prospect));
+                                res.send({sitepower_id: prospect.sitepower_id})
+                            })
+                            .catch(err => {
+
+
+                                return db.createProspect(user.id, getName(qres.test), qres.id)
+                                    .then(prospect => {
+                                        const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+                                        debug("/api/prospect/:id", "setRegionByChatId", ip);
+                                        axios.get('http://free.ipwhois.io/json/' + ip)
+                                            .then(result => {
+                                                debug("/api/prospect/:id", "setRegionByChatId", result.data);
+                                                if (result.data && result.data.region && result.data.city) {
+                                                    let region = result.data.region === result.data.city ? result.data.city : result.data.region + ", " + result.data.city;
+                                                    debug("/api/prospect/:id", "setRegionByChatId", "qqq", prospect.sitepower_id, region);
+                                                    db.setRegionByChatId(prospect.sitepower_id, region).then().catch((err) => {
+                                                        debug("/api/prospect/:id", "{ERROR}", "setRegionByChatId", req.params.id, req.body.prospect_id, err.message);
+                                                    });
+                                                }
+                                            })
+                                            .catch(err => {
+                                                debug("/api/prospect/:id", "{ERROR}", "http://free.ipwhois.io/json/", req.params.id, req.body.prospect_id, err.message);
+                                            })
+
+                                        debug("/api/prospect/:id", JSON.stringify(prospect));
+                                        res.send({sitepower_id: prospect.sitepower_id})
+                                    })
+                                    .catch(err => {
+                                        res.status(400).send("Cannot get prospect sitepower_id for " + req.params.id);
+                                        debug("/api/prospect/:id", "{ERROR}", "createProspect", req.params.id, req.body.prospect_id, err.message);
+                                    })
+                            })
+                    })
+                .catch(err => {
+                    res.status(400).send("Cannot get prospect sitepower_id for " + req.params.id);
+                    debug("/api/prospect/:id", "{ERROR}", "getUserById", req.params.id, req.body.prospect_id, err.message);
+                })
+        }).catch(err => {
+            res.status(400).send("Cannot get prospect sitepower_id for " + req.params.id);
+            debug("/api/prospect/:id", "{ERROR}", "getFormBySpId", req.params.id, req.body.prospect_id, err.message);
+        })
     })
+
+
 
     app.get("/api/prospect/form/:id", (req, res) => {
         debug("/api/prospect/form/:id", req.params.id);

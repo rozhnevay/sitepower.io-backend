@@ -211,3 +211,6 @@ create index t_payment_ya_id_index
 ALTER TABLE t_payment drop column status;
 ALTER TABLE t_payment add column status varchar(100)  default 'new';
 /*     DONE       */
+ALTER TABLE t_prospect add column form_id int;
+update t_prospect set form_id=8 /*?????*/
+where form_id is null

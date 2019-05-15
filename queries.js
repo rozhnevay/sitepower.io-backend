@@ -165,9 +165,11 @@ function getChatsByUserId(user_id, limit, before_id) {
             p.last_msg_id,
             p.cnt_unanswered,
             p.last_open_dt as lastOpenDt,
-            p.region
+            p.region,
+            f.origin
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
+        inner join t_form f on p.form_id = f.id
         where p.user_id = $1 and ((p.class <> $2 and p.class <> $5) or p.class is null)
         and p.last_msg_id < $4
         order by p.last_msg_id desc, p.id desc
@@ -194,9 +196,11 @@ function getChatById(id) {
             p.last_msg_id,
             p.cnt_unanswered,
             p.last_open_dt as lastOpenDt,
-            p.region
+            p.region,
+            f.origin
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
+        inner join t_form f on p.form_id = f.id
         where p.id = $1 and ((p.class <> $2 and p.class <> $3) or p.class is null)
         `, [id, 'SPAM', 'DELETED']);
 }
@@ -205,8 +209,8 @@ function getUserBySPId(sitepower_id) {
     return db.one('select * from t_user where sitepower_id = $1', sitepower_id);
 }
 
-function createProspect(user_id, name) {
-    return db.one('insert into t_prospect (user_id, full_name) values($1, $2) returning sitepower_id', [user_id, name]);
+function createProspect(user_id, name, form_id) {
+    return db.one('insert into t_prospect (user_id, full_name, form_id) values($1, $2, $3) returning sitepower_id', [user_id, name, form_id]);
 }
 
 function updateProspectChatId(sitepower_id, chat_id) {

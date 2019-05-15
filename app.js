@@ -35,9 +35,6 @@ app.use(function(req, res, next) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     return next();
 });
-// app.get("/", (req, res, next) => {
-//   res.sendFile("index.html", { root: publicRoot })
-// })
 
 /* Widget Send*/
 const fs = require('fs');
