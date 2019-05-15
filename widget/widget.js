@@ -580,18 +580,13 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
             $contMin.show();
         });
         try {
-            if (!sitepower_id) {
-                $.get(api_url + '/api/prospect/' + widget_id).done(function (data) {
-                    sitepower_id = data.sitepower_id;
-                    localStorage.setItem("sitepower_id", sitepower_id);
-                    connect();
-                }).fail(function (err) {
-                    throw new Error(err.toString())
-                });
-            } else {
-                console.log("Already done");
+            $.post(api_url + '/api/prospect/get/' + widget_id , {prospect_id: sitepower_id}).done(function (data) {
+                sitepower_id = data.sitepower_id;
+                localStorage.setItem("sitepower_id", sitepower_id);
                 connect();
-            }
+            }).fail(function (err) {
+                throw new Error(err.toString())
+            });
         } catch (e) {
             console.log(e.toString());
             return;
@@ -623,24 +618,23 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
                     $('#sitepower .chatbox__title__full').addClass('color-' + data.color);
 
 
-                    if ($contMin.is(':hidden') && $contFull.is(':hidden') && socket.connected) {
+
+                    //chatbox__title
+
+                    if ($contMin.is(':hidden') && $contFull.is(':hidden')  && socket.connected) {
                         $contMin.show();
                     }
                 }).fail(function (err) {console.log(err.message)});
 
-                $.get('http://free.ipwhois.io/json/').done(function (data){
-                    if (data && data.region && data.city) {
-                        var region = data.region === data.city ?  data.city : data.region + ", " + data.city;
-                        $.post(api_url + '/api/prospect/geo/' + sitepower_id, {region: region}).done(function (data){
-                        }).fail(function (err) {console.log(err.message)});
-                    }
 
-                }).fail(function (err) {console.log(err.message)});
+
+
 
             });
             socket.on('connect_error', function(error) {
                 console.log("connect_error!!!");
             });
+
 
             $messageText = $("#sitepower .chatbox__message textarea");
             $messageText.focus();
@@ -703,7 +697,6 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
             });
             socket.on("receive", function(data){
                 console.log("receive");
-                console.log(data);
                 if (data.msg)
                     addMsg(data.msg);
             });
@@ -724,8 +717,6 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
         }
 
         function addMsg (msg) {
-            console.log("qqq");
-            console.log(msg)
             var htmlMsg = "";
             var tmMsg = new Date(msg.created);
             var tmMsgStr = "";
@@ -808,3 +799,4 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
     };
     $("#sitepower").sitepower();
 })($);
+
