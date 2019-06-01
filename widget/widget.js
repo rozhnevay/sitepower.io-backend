@@ -682,7 +682,7 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
                     //$.post(api_url + "/upload", formData, {headers: {'Content-Type': 'multipart/form-data'}});
                     $.ajax({
                         type: "POST",
-                        url: 'http://' + api_url + "/api/upload",
+                        url: api_url + "/api/upload",
                         data: formData,
                         processData: false,
                         contentType: false,
