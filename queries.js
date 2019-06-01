@@ -98,7 +98,7 @@ function updateUserPassword(user_id, pass) {
 }
 
 function updateUserNamePassword(user_id, name, pass) {
-    return db.none('update t_user set pass = $1, name = $2 where id = $3', [pass, name, user_id]);
+    return db.none('update t_user set pass = $1, name = $2, status = 1 where id = $3', [pass, name, user_id]);
 }
 
 function updateUserChatId(user_id, chat_id) {

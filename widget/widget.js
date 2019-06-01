@@ -568,6 +568,7 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
         $contFull.hide();
         $contMin.hide();
         $contMin.on("click", function (event) {
+            event.preventDefault();
             $("#sitepower").toggleClass('chatbox--tray');
             $contFull.show();
             $contMin.hide();
@@ -575,6 +576,7 @@ $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
 
         });
         $contFullHead.on("click", function (event) {
+            event.preventDefault();
             $("#sitepower").toggleClass('chatbox--tray');
             $contFull.hide();
             $contMin.show();
