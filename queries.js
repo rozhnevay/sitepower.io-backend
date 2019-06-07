@@ -163,7 +163,7 @@ function updateFormVkConfirm(id, confirm) {
 
 
 function getFormVkByGroupId(id) {
-    return db.any('select * from t_form where vk_group_id = $1', id);
+    return db.one('select * from t_form where vk_group_id = $1', id);
 }
 
 function updateForm(id, user_id, form) {
