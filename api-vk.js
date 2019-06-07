@@ -79,7 +79,8 @@ module.exports = function (app, authMiddleware) {
         debug("/api/vk/message", req.body);
         if (req.body.type === "confirmation") {
             return db.getFormVkByGroupId(req.body.group_id).then(dat => {
-                res.send(dat.vk_confirm);
+                debug("/api/vk/message", "{COOL}", dat);
+                res.send(dat[0].vk_confirm);
             }).catch(err => {
                 debug("/api/vk/message", "{ERROR}", req.body.group_id, err.message);
                 res.status(400).send("Cannot get confirmation");
