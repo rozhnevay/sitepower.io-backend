@@ -115,6 +115,7 @@ require('./api-auth')(app, authMiddleware, passport, rateLimit); // Auth API
 require('./api-forms')(app, authMiddleware); // Forms API
 
 require('./api-upload')(app, authMiddleware); // Upload
+require('./api-vk')(app, authMiddleware); // vk-api
 
  // Socket API
 require('./api-chat')(app, authMiddleware); // Chat API

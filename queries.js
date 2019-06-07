@@ -18,6 +18,10 @@ module.exports = {
     getFormsByUserId: getFormsByUserId,
     getFormById: getFormById,
     createForm: createForm,
+    createFormVk:createFormVk,
+    getFormVkByGroupId:getFormVkByGroupId,
+    updateFormVkToken:updateFormVkToken,
+    updateFormVkConfirm:updateFormVkConfirm,
     updateUserPassword: updateUserPassword,
     getChatsByUserId:getChatsByUserId,
     getChatBySpId:getChatBySpId,
@@ -107,7 +111,7 @@ function updateUserChatId(user_id, chat_id) {
 }
 
 function getFormsByUserId(user_id) {
-    return db.any('select id, origin, color, gradient, label, position, message_placeholder, sitepower_id, created, test from t_form where user_id = $1', user_id);
+    return db.any('select id, origin, color, gradient, label, position, message_placeholder, sitepower_id, created, test from t_form where user_id = $1 and status = 1', user_id);
 }
 
 function getOperators(user_id) {
@@ -143,6 +147,23 @@ function getFormById(id) {
 
 function createForm(user_id, origin, test) {
     return db.one('insert into t_form(user_id, origin, test) values($1, $2, $3) returning id', [user_id, origin, test]);
+}
+
+function createFormVk(user_id, origin, vk_group_id) {
+    return db.one('insert into t_form(user_id, origin, type, status, vk_group_id) values($1, $2, $3, 0, $4) returning id', [user_id, origin, "vk", vk_group_id]);
+}
+
+function updateFormVkToken(id, token) {
+    return db.none('update t_form set vk_token=$2 where vk_group_id=$1', [id, token]);
+}
+
+function updateFormVkConfirm(id, confirm) {
+    return db.none('update t_form set vk_confirm=$2 where vk_group_id=$1', [id, confirm]);
+}
+
+
+function getFormVkByGroupId(id) {
+    return db.any('select * from t_form where vk_group_id = $1', id);
 }
 
 function updateForm(id, user_id, form) {
