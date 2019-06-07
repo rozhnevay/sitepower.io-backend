@@ -3,7 +3,7 @@ const debug = require('debug')('sitepower.io-backend:api-vk');
 const axios = require('axios');
 
 module.exports = function (app, authMiddleware) {
-    app.get("/api/vk/groups/:token", (req, res) => {
+    app.get("/api/vk/groups/:token", authMiddleware, (req, res) => {
         debug("/api/vk/groups/:token", req.params.token);
         axios.get("https://api.vk.com/method/groups.get?access_token=" + req.params.token + "&filter=admin&extended=1&v=5.95")
             .then(result => {
@@ -19,7 +19,7 @@ module.exports = function (app, authMiddleware) {
             })
     })
 
-    app.post("/api/vk/group", (req, res) => {
+    app.post("/api/vk/group", authMiddleware, (req, res) => {
         debug("/api/vk/group", req.body.id, req.body.name);
         db.getFormVkByGroupId(req.body.id).then(form => {
             if (form.length > 0) {
@@ -38,7 +38,7 @@ module.exports = function (app, authMiddleware) {
         })
     })
 
-    app.get("/api/vk/group/:id/:code", (req, res) => {
+    app.get("/api/vk/group/:id/:code", authMiddleware, (req, res) => {
         debug("/api/vk/group/:id/:code", req.params.code, req.params.id);
         axios.get("https://oauth.vk.com/access_token?client_id=" + process.env.VK_ID + "&client_secret=" + process.env.VK_SECRET + "&redirect_uri=https://app.sitepower.io/private/vk&code=" + req.params.code)
             .then(result => {
@@ -76,12 +76,12 @@ module.exports = function (app, authMiddleware) {
     })
 
     app.post("/api/vk/message", (req, res) => {
-        debug("/api/vk/message", req.params);
-        if (req.params.type === "confirmation") {
-            return db.getFormVkByGroupId(req.params.group_id).then(dat => {
+        debug("/api/vk/message", req.body);
+        if (req.body.type === "confirmation") {
+            return db.getFormVkByGroupId(req.body.group_id).then(dat => {
                 res.send(dat.vk_confirm);
             }).catch(err => {
-                debug("/api/vk/message", "{ERROR}", req.params.group_id, err.message);
+                debug("/api/vk/message", "{ERROR}", req.body.group_id, err.message);
                 res.status(400).send("Cannot get confirmation");
             })
         } else {
