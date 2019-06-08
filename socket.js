@@ -394,7 +394,7 @@ module.exports = function (server, app, session, passport) {
             chatStore.get("chat:" + msg.recepient_id, (err, value) => {
                 let recepient = JSON.parse(value);
                 devices.filter(item => !item.online).forEach(item => {
-                    debug("{DEVICE SEND TO}", item.device_id);
+                    debug("{DEVICE SEND TO} ", item.device_id);
 
                     axios.post("https://fcm.googleapis.com/fcm/send",
                         {
