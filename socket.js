@@ -402,7 +402,7 @@ module.exports = function (server, app, session, passport) {
                                 {
                                     id: prospect.id,
                                     title: "Онлайн-диалог \"" + prospect.full_name + "\"",
-                                    text: msg,
+                                    text: msg.body,
                                     badge: 1,
                                     sound: "default"
                                 },

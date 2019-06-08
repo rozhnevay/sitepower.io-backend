@@ -114,7 +114,7 @@ function updateUserChatId(user_id, chat_id) {
 }
 
 function getFormsByUserId(user_id) {
-    return db.any('select id, origin, color, gradient, label, position, message_placeholder, sitepower_id, created, test from t_form where user_id = $1 and status = 1', user_id);
+    return db.any('select id, origin, color, gradient, label, position, message_placeholder, sitepower_id, created, test, type from t_form where user_id = $1 and status = 1', user_id);
 }
 
 function getOperators(user_id) {
@@ -244,7 +244,7 @@ function createProspect(user_id, name, form_id) {
 }
 
 function createVkProspect(user_id, vk_from_id, name, form_id) {
-    return db.one('insert into t_prospect (user_id, full_name, form_id, vk_from_id) values($1, $3, $4, $2) returning sitepower_id', [user_id, vk_from_id, name, form_id]);
+    return db.one('insert into t_prospect (user_id, full_name, form_id, vk_from_id, region) values($1, $3, $4, $2, "") returning sitepower_id', [user_id, vk_from_id, name, form_id]);
 }
 
 function getVkProspect(vk_from_id, form_id) {
