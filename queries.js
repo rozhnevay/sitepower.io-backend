@@ -28,6 +28,9 @@ module.exports = {
     updateUserChatId:updateUserChatId,
     getUserBySPId:getUserBySPId,
     createProspect:createProspect,
+    createVkProspect:createVkProspect,
+    getVkProspect:getVkProspect,
+    updateFormVkServerComplete:updateFormVkServerComplete,
     updateProspectChatId:updateProspectChatId,
     getProspectUserBySPId:getProspectUserBySPId,
     getChatIdByUserId:getChatIdByUserId,
@@ -161,6 +164,10 @@ function updateFormVkConfirm(id, confirm) {
     return db.none('update t_form set vk_confirm=$2 where vk_group_id=$1', [id, confirm]);
 }
 
+function updateFormVkServerComplete(id, server_id) {
+    return db.none('update t_form set vk_server_id=$2, status=1 where vk_group_id=$1', [id, server_id]);
+}
+
 
 function getFormVkByGroupId(id) {
     return db.any('select * from t_form where vk_group_id = $1', id);
@@ -187,7 +194,8 @@ function getChatsByUserId(user_id, limit, before_id) {
             p.cnt_unanswered,
             p.last_open_dt as lastOpenDt,
             p.region,
-            f.origin
+            f.origin,
+            f.type
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
         inner join t_form f on p.form_id = f.id
@@ -218,7 +226,8 @@ function getChatById(id) {
             p.cnt_unanswered,
             p.last_open_dt as lastOpenDt,
             p.region,
-            f.origin
+            f.origin,
+            f.type
         from t_prospect p
         inner join t_msg m on m.id = p.last_msg_id
         inner join t_form f on p.form_id = f.id
@@ -232,6 +241,14 @@ function getUserBySPId(sitepower_id) {
 
 function createProspect(user_id, name, form_id) {
     return db.one('insert into t_prospect (user_id, full_name, form_id) values($1, $2, $3) returning sitepower_id', [user_id, name, form_id]);
+}
+
+function createVkProspect(user_id, vk_from_id, name, form_id) {
+    return db.one('insert into t_prospect (user_id, full_name, form_id, vk_from_id) values($1, $3, $4, $2) returning sitepower_id', [user_id, vk_from_id, name, form_id]);
+}
+
+function getVkProspect(vk_from_id, form_id) {
+    return db.one('select * from t_prospect where vk_from_id = $1 and form_id = $2', [vk_from_id, form_id]);
 }
 
 function updateProspectChatId(sitepower_id, chat_id) {

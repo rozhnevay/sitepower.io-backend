@@ -49,7 +49,22 @@ module.exports = function (app, authMiddleware) {
                             db.updateFormVkConfirm(req.params.id, result.data.response.code).then(() => {
                                 axios.get("https://api.vk.com/method/groups.addCallbackServer?group_id=" + req.params.id + "&url=https://ws.sitepower.io/api/vk/message&title=Sitepower&access_token="+token + "&v=5.95")
                                     .then(result => {
-                                        res.send("OK");
+                                        //res.send("OK");
+                                        /*updateFormVkServerComplete(req.params.id, result.data.response.server_id).then(
+
+                                        )*/
+                                        let server_id = result.data.response.server_id;
+                                        axios.get("https://api.vk.com/method/groups.setCallbackSettings?group_id=" + req.params.id + "&server_id=" + server_id + "&api_version=5.95&message_new=1&message_allow=1&message_deny=1&access_token="+token + "&v=5.95").then(result => {
+                                            db.updateFormVkServerComplete(req.params.id, result.data.response.server_id).then(() => {
+                                                res.send("OK");
+                                            }).catch(err => {
+                                                debug("/api/vk/group/:id/:code", "{ERROR}", "updateFormVkServerComplete", req.params.code, err.message);
+                                                res.status(400).send("Cannot updateFormVkServerComplete for " + req.params.code);
+                                            })
+                                        }).catch(err => {
+                                            debug("/api/vk/group/:id/:code", "{ERROR}", req.params.code, err.message);
+                                            res.status(400).send("Cannot setCallbackSettings for " + req.params.code);
+                                        })
                                     })
                                     .catch(err => {
                                         debug("/api/vk/group/:id/:code", "{ERROR}", req.params.code, err.message);
@@ -75,43 +90,7 @@ module.exports = function (app, authMiddleware) {
             })
     })
 
-    app.post("/api/vk/message", (req, res) => {
-        debug("/api/vk/message", req.body);
-        if (req.body.type === "confirmation") {
-            return db.getFormVkByGroupId(req.body.group_id).then(dat => {
-                debug("/api/vk/message", "{COOL}", dat);
-                res.send(dat[0].vk_confirm);
-            }).catch(err => {
-                debug("/api/vk/message", "{ERROR}", req.body.group_id, err.message);
-                res.status(400).send("Cannot get confirmation");
-            })
-        } else {
-            res.send("OK");
-        }
-    })
-    //
-    // app.get("/api/vk/token/:code/:name/:id", (req, res) => {
-    //     debug("/api/vk/token/:code/:name/:id", req.params.code, req.params.name, req.params.id);
-    //     axios.get("https://oauth.vk.com/access_token?client_id=7003708&client_secret=f8101ae3f8101ae3f8101ae35ff87ac4dfff810f8101ae3a4e05a94ac3c0557625f9d93&redirect_uri=https://app.sitepower.io/private/vk&code=" + req.params.code)
-    //         .then(result => {
-    //             /*save token*/
-    //             /*add callback*/
-    //             let token = result.data["access_token_" + req.params.id];
-    //             db.createFormVk(req.session.passport.user, req.params.name, req.params.id, token).then(() => {
-    //                 axios.get("https://api.vk.com/method/groups.addCallbackServer?group_id=" + req.params.id + "&url=https://ws.sitepower.io/api/vk/message&title=Sitepower&secret_key="+token)
-    //                     .then(result => {
-    //                         res.send("OK");
-    //                     })
-    //                     .catch(err => {
-    //                         debug("/api/vk/token/:code/:name/:id", "{ERROR}", req.params.code, err.message);
-    //                         res.status(400).send("Cannot get vk groups for " + req.params.token);
-    //                     })
-    //             })
-    //         })
-    //         .catch(err => {
-    //             debug("/api/vk/token/:code/:name/:id", "{ERROR}", req.params.code, err.message);
-    //             res.status(400).send("Cannot get vk manage for " + req.params.code);
-    //         })
-    // })
+
+
 
 }

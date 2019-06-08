@@ -214,7 +214,7 @@ ALTER TABLE t_payment add column status varchar(100)  default 'new';
 ALTER TABLE t_prospect add column form_id int;
 update t_prospect set form_id=8 /*?????*/
 where form_id is null
-/*     DONE       */
+
 alter table t_form add column vk_group_id INT;
 alter table t_form add column vk_token varchar(100);
 alter table t_form add column type varchar(30) default 'site';
@@ -222,3 +222,8 @@ alter table t_form add column status int default 1;
 create unique index t_form_vk_id_index
   on t_form (vk_group_id);
 alter table t_form add column vk_confirm varchar(100);
+/*     DONE       */
+alter table t_prospect add column vk_from_id INT;
+create index t_prospect_vk_from_id_index
+  on t_prospect (vk_from_id);
+alter table t_form add column vk_server_id int;

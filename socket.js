@@ -252,7 +252,15 @@ module.exports = function (server, app, session, passport) {
                                                 })
                                             })
                                         }
-
+                                        // вконтактик
+                                        if (prospect.vk_from_id) {
+                                            return db.getFormById(prospect.form_id).then(form => {
+                                                axios.get("https://api.vk.com/method/messages.send?user_id=" + prospect.vk_from_id + "&message=" + encodeURIComponent(msg.body) + "&random_id=" + msg.id + "&peer_id=" + prospect.vk_from_id + "&access_token="+ form.vk_token + "&v=5.95").then(result => {
+                                                }).catch(err => {
+                                                    debug("VK send", "{ERROR}", err.message);
+                                                })
+                                            })
+                                        }
                                     }).catch(err => debug("socket", "send", "getChatById", err.message))
                                 }).catch(err => debug("socket", "send", "setCountUnanswered", err.message))
                             }).catch(err => debug("socket", "send", "updateLastMessage", err.message));
@@ -380,6 +388,121 @@ module.exports = function (server, app, session, passport) {
         });
 
     });
+    sendToDevice = (prospect, msg) => {
+        return db.getUserDevices(prospect.user_id).then(devices => {
+            devices.map(device => device.online = false);
+            chatStore.get("chat:" + msg.recepient_id, (err, value) => {
+                let recepient = JSON.parse(value);
+                devices.filter(item => !item.online).forEach(item => {
+                    debug("{DEVICE SEND TO}", item.device_id);
+
+                    axios.post("https://fcm.googleapis.com/fcm/send",
+                        {
+                            notification:
+                                {
+                                    id: prospect.id,
+                                    title: "Онлайн-диалог \"" + prospect.full_name + "\"",
+                                    text: msg,
+                                    badge: 1,
+                                    sound: "default"
+                                },
+                            priority: "High",
+                            to: item.device_id
+                        },
+                        {
+                            headers: {'Authorization': 'key=' + process.env.GOOGLE_FB_KEY}
+                        }).then(res => {
+                        debug("{DEVICES - GOOGLE OK}", res.data.results)
+                        if (res.data.results[0].error && (res.data.results[0].error === "NotRegistered" || res.data.results[0].error === "InvalidRegistration")){
+                            db.deleteDeviceToken(item.device_id).then(() => {
+                                debug("{DEVICES - DELETED TOKEN}", item.device_id)
+                            }).catch(err => {
+                                debug("{DEVICES - CANNOT DELETE TOKEN}", item.device_id, err.message);
+                            })
+                        }
+
+                    })
+                        .catch(err => debug("{DEVICES - GOOGLE ERROR}", err))
+                });
+            })
+        })
+    }
+    sendToUser = (userSpId, chat, msg, prospect) => {
+        chatStore.get("chat:" + userSpId, (err, value) => {
+            if (err) debug("{SEND ERROR 2}", err.message);
+            let recepient = JSON.parse(value);
+            if (recepient) {
+                recepient.chat.forEach(item => io.to(item.chatId).emit("receive", {chat: chat, msg: msg}))
+            }   // посылаем актуальное состояние чата
+        })
+        sendToDevice(prospect, msg);
+        return true;
+    }
+
+    getChatSendMessage = (prospect_sp_id, msg_body) => {
+        return db.getChatBySpId(prospect_sp_id).then(prospect => {
+            let msg_prospect_id = prospect.id;
+            return db.createMessage(msg_prospect_id, msg_body, "text", "", null, "to_user").then(res => {
+                return db.getMessageById(res.id).then(msg => {
+                    return db.updateLastMessageOperator(msg_prospect_id, msg.id, "to_user", null).then(() => {
+                        return db.setCountUnanswered(msg_prospect_id, "to_user").then(() => {
+                            return db.getChatById(msg_prospect_id).then(chat => {
+                                return db.getUserById(prospect.user_id).then(user => {
+                                    return sendToUser(user.sitepower_id, chat, msg, prospect);
+                                }).catch(err => debug("socket", "send", "getUserById", err.message))
+                            }).catch(err => debug("socket", "send", "getChatById", err.message))
+                        }).catch(err => debug("socket", "send", "setCountUnanswered", err.message))
+                    }).catch(err => debug("socket", "send", "updateLastMessageOperator", err.message))
+                }).catch(err => debug("socket", "send", "getMessageById", err.message))
+            }).catch(err => debug("socket", "send", "createMessage", err.message))
+        }).catch(err => debug("socket", "send", "getChatBySpId", err.message))
+    }
+
+    app.post("/api/vk/message", (req, res) => {
+        debug("/api/vk/message", req.body);
+        if (req.body.type === "confirmation") {
+            return db.getFormVkByGroupId(req.body.group_id).then(dat => {
+                res.send(dat[0].vk_confirm);
+            }).catch(err => {
+                debug("/api/vk/message", "{ERROR}", req.body.group_id, err.message);
+                res.status(400).send("Cannot get confirmation");
+            })
+        } else if (req.body.type === "message_new") {
+            return db.getFormVkByGroupId(req.body.group_id).then(form => {
+                if (form.length > 0) {
+                    form = form[0];
+                    return db.getVkProspect(req.body.object.from_id, form.id).then(prospect => {
+                        if (getChatSendMessage(prospect.sitepower_id, req.body.object.text)) {
+                            res.send("OK");
+                            return true;
+                        }
+                    }).catch(err => {
+                        axios.get("https://api.vk.com/method/users.get?user_ids=2727146&fields=first_name&access_token="+ form.vk_token + "&v=5.95").then(result => {
+                            return db.createVkProspect(form.user_id, req.body.object.from_id, result.data.response[0].first_name + " " + result.data.response[0].last_name, form.id).then(prospect => {
+                                if (getChatSendMessage(prospect.sitepower_id, req.body.object.text)) {
+                                    res.send("OK");
+                                    return true;
+                                }
+                            }).catch(err => {
+                                debug("/api/vk/message", "{ERROR}", "createVkProspect", req.body, err.message);
+                            })
+                        }).catch(err => {
+                            debug("/api/vk/message", "{ERROR}", "createVkProspect", req.body, err.message);
+                            res.status(400).send("Cannot get name for");
+                        })
+
+
+                    })
+                }
+            }).catch(err => {
+                res.status(400).send("Cannot create vk form");
+                debug("/api/vk/group", "{ERROR}", "{GET}", "getFormVkByGroupId", req.body, err.message);
+            })
+
+        } else {
+            res.send("OK");
+        }
+    })
 /*
     function updateChat(id, msg) {
         db.getChatBodyBySpId(id).then(
