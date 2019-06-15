@@ -116,6 +116,7 @@ require('./api-forms')(app, authMiddleware); // Forms API
 
 require('./api-upload')(app, authMiddleware); // Upload
 require('./api-vk')(app, authMiddleware); // vk-api
+require('./api-alice')(app, authMiddleware); // alice-api
 
  // Socket API
 require('./api-chat')(app, authMiddleware); // Chat API
