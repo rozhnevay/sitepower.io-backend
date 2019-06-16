@@ -222,8 +222,37 @@ alter table t_form add column status int default 1;
 create unique index t_form_vk_id_index
   on t_form (vk_group_id);
 alter table t_form add column vk_confirm varchar(100);
-/*     DONE       */
 alter table t_prospect add column vk_from_id INT;
 create index t_prospect_vk_from_id_index
   on t_prospect (vk_from_id);
 alter table t_form add column vk_server_id int;
+/*     DONE       */
+create sequence t_alice_sentence_id_seq
+  as integer
+  maxvalue 2147483647;
+
+alter sequence t_alice_sentence_id_seq owner to postgres;
+create table t_alice_sentence (
+      id integer DEFAULT nextval('t_alice_sentence_id_seq'::regclass),
+      created TIMESTAMPTZ default now() not null,
+      updated TIMESTAMPTZ default now() not null,
+      skill_id varchar(36),
+      flag varchar(1),
+      sentence JSON,
+      reply_attr JSON
+);
+
+CREATE TRIGGER set_timestamp_t_alice_sentence
+  BEFORE UPDATE ON t_alice_sentence
+  FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
+
+alter table t_alice_sentence
+  add constraint t_alice_sentence_pk
+    primary key (id);
+
+create index t_alice_sentence_index
+  on t_alice_sentence (skill_id);
+
+alter table t_alice_sentence add column next_id INT;
+alter table t_alice_sentence add column sentence_error JSON;

@@ -64,7 +64,9 @@ module.exports = {
     createPayment:createPayment,
     updatePayment:updatePayment,
     updatePaymentByYaId:updatePaymentByYaId,
-    getPaymentByYaId:getPaymentByYaId
+    getPaymentByYaId:getPaymentByYaId,
+    getAliceFirstSentence:getAliceFirstSentence,
+    getAliceSentence:getAliceSentence
 };
 
 function getUserByLogin(login) {
@@ -417,4 +419,14 @@ function updatePaymentByYaId (ya_id, status) {
 
 function getPaymentByYaId (ya_id) {
     return db.one(`select * from t_payment where ya_id=$1`, ya_id);
+}
+
+
+function getAliceFirstSentence(skill_id) {
+    return db.one(`select * from t_alice_sentence where skill_id=$1 and flag='B'`, skill_id);
+}
+
+
+function getAliceSentence(sentence_id) {
+    return db.one(`select * from t_alice_sentence where id=$1`, sentence_id);
 }
