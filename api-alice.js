@@ -65,9 +65,19 @@ module.exports = function (app) {
             else return 6;
         }
     }
+    const getHelp = (skill_id)=> {
+        if (skill_id === "96a9f802-2aba-4626-8fa5-bf10fb9b1110") {
+            return {text:"Я калькулятор индекса массы тела. В процессе диалога я спрошу у вас рос и вес. По итогам рассчитаю ваш индекс."};
+        }
+    }
+
     const getAnswer = (session, req) => {
         return new Promise((resolve, reject) => {
             client.get("alice:" + session.session_id, (err, reply) => {
+                if (/помощь/i.test(req.command) || /что ты умеешь/i.test(req.command)) {
+                    resolve({sentence:getHelp(session.skill_id), last:false});
+                }
+
                 if (!reply){
                     let skill = session.skill_id;
                     return db.getAliceFirstSentence(skill).then(q => {
