@@ -2,6 +2,7 @@ const debug = require('debug')('sitepower.io-backend:api-alice');
 const nodemailer = require('nodemailer');
 const redis = require('redis'),client = redis.createClient(process.env.REDIS_URL);
 const db = require('./queries');
+const {sample} = require('lodash');
 
 module.exports = function (app) {
 
@@ -116,22 +117,24 @@ module.exports = function (app) {
 
     app.post("/api/alice/fatcalc", (req, res) => {
         getAnswer(req.body.session, req.body.request).then((dat, end) => {
+            const sentence = eval("`" + dat.sentence.text + "`")
             res.send({
                 session : req.body.session,
                 version : req.body.version,
                 response: {
-                    text : dat.sentence.text,
-                    tts : dat.sentence.text,
+                    text : sentence,
+                    tts : sentence,
                     "end_session": dat.last
                 }
             })
-        }).catch(() => {
+        }).catch((err) => {
+            debug("getAnswer", '{ERROR}', err.message)
             res.send({
                 session : req.body.session,
                 version : req.body.version,
                 response: {
-                    text : "Я болею и не могу ответить. Приходите в другой раз",
-                    tts : "Я болею и не могу ответить. Приходите в другой раз",
+                    text : "Что то пошло не так. Повторите позже",
+                    tts : "Что то пошло не так. Повторите позже",
                     "end_session": true
                 }
             })
