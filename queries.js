@@ -386,7 +386,7 @@ function getOperatorsCountByUser() {
             u.id,
             count(1) as cnt
         from t_user u
-        inner join t_user o on o.parent_id = u.id or o.id = u.id
+        inner join t_user o on o.parent_id = u.id
         where u.days_amount > 0
         group by u.id
     `);
