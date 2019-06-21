@@ -524,9 +524,12 @@ widgetStyles = '#sitepower.chatbox .collapse_color.color-green {\n' +
     '    display: none !important;\n' +
     '}\n' +
     '\n' +
-    '@media (max-width: 1000px) {\n' +
-    '\n' +
-    '}\n';
+    '@media (max-width: 320px) {\n' +
+    '    #sitepower.chatbox {\n' +
+    '        right: 0px;\n' +
+    '        width: 100%;\n' +
+    '    }\n' +
+    '}';
 $("head").append('<style>' + widgetStyles + '</style>')
 /**Plugin start */
 $("body").append('<div id="sitepower" class="chatbox chatbox--tray"/>');
