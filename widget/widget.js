@@ -471,8 +471,9 @@ widgetStyles = '#sitepower.chatbox .collapse_color.color-green {\n' +
     '    align-items: center;\n' +
     '    padding-left: 15px;\n' +
     '    padding-right: 15px;\n' +
-    '    height: 80px;\n' +
+    '    height: 70px;\n' +
     '    background-color: white;\n' +
+    '    overflow: hidden;\n' +
     '}\n' +
     '#sitepower .chatbox__message .pin, .chatbox__message .send  {\n' +
     '    cursor: pointer;\n' +
@@ -490,12 +491,13 @@ widgetStyles = '#sitepower.chatbox .collapse_color.color-green {\n' +
     '    cursor: pointer;\n' +
     '}\n' +
     '#sitepower .chatbox__message textarea {\n' +
-    '    padding-top: 15px;\n' +
+    '    padding-top: 30px;\n' +
     '    padding-left: 10px;\n' +
+    '    margin-bottom: 10px;\n' +
     '    outline: 0;\n' +
     '    resize: none;\n' +
     '    border: none;\n' +
-    '    font-size: 14px;\n' +
+    '    font-size: 16px;\n' +
     '    background-color: #fefefe;\n' +
     '    width: 90%;\n' +
     '}\n' +
@@ -524,7 +526,7 @@ widgetStyles = '#sitepower.chatbox .collapse_color.color-green {\n' +
     '    display: none !important;\n' +
     '}\n' +
     '\n' +
-    '@media (max-width: 320px) {\n' +
+    '@media (device-width: 320px) {\n' +
     '    #sitepower.chatbox {\n' +
     '        right: 0px;\n' +
     '        width: 100%;\n' +
