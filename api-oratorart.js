@@ -17,9 +17,9 @@ const sendNewLead = (name, phone, mail, text) => {
         subject: 'Заявка с сайта',
         html: `
             Имя: ${name}
-            Телефон: ${phone}
-            Email: ${mail}
-            Сообщение: ${text}
+            \nТелефон: ${phone}
+            \nEmail: ${mail}
+            \nСообщение: ${text}
         `
     };
 
