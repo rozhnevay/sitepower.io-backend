@@ -13,13 +13,13 @@ const sendNewLead = (name, phone, mail, text) => {
     });
     let mailOptions = {
         from: process.env.SMTP_LOGIN,
-        to: "rozhnevay@gmail.com",
+        to: "moskvina.vera-m@yandex.ru;rozhnevay@gmail.com",
         subject: 'Заявка с сайта',
         html: `
-            Имя: ${name}
-            \nТелефон: ${phone}
-            \nEmail: ${mail}
-            \nСообщение: ${text}
+            <p>Имя: ${name}</p>
+            <p>Телефон: <a href="tel:${phone}">${phone}</a></p>
+            <p>Email: <a href="mailto:${mail}">${mail}</a></p>
+            <p>Сообщение: ${text}</p>
         `
     };
 
