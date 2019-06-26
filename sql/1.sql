@@ -226,7 +226,7 @@ alter table t_prospect add column vk_from_id INT;
 create index t_prospect_vk_from_id_index
   on t_prospect (vk_from_id);
 alter table t_form add column vk_server_id int;
-/*     DONE       */
+
 create sequence t_alice_sentence_id_seq
   as integer
   maxvalue 2147483647;
@@ -256,3 +256,11 @@ create index t_alice_sentence_index
 
 alter table t_alice_sentence add column next_id INT;
 alter table t_alice_sentence add column sentence_error JSON;
+
+/*     DONE       */
+create table t_alice_log (
+    session_id varchar(36),
+    created TIMESTAMPTZ default now() not null,
+    type  varchar(100),
+    body  JSON
+);

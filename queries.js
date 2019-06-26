@@ -66,7 +66,8 @@ module.exports = {
     updatePaymentByYaId:updatePaymentByYaId,
     getPaymentByYaId:getPaymentByYaId,
     getAliceFirstSentence:getAliceFirstSentence,
-    getAliceSentence:getAliceSentence
+    getAliceSentence:getAliceSentence,
+    createAliceLog:createAliceLog
 };
 
 function getUserByLogin(login) {
@@ -429,4 +430,8 @@ function getAliceFirstSentence(skill_id) {
 
 function getAliceSentence(sentence_id) {
     return db.one(`select * from t_alice_sentence where id=$1`, sentence_id);
+}
+
+function createAliceLog(session_id, type, body) {
+    return db.none(`insert into t_alice_log(session_id, type, body) values($1, $2, $3)`, [session_id, type, body]);
 }

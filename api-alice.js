@@ -1,11 +1,16 @@
 const debug = require('debug')('sitepower.io-backend:api-alice');
 const nodemailer = require('nodemailer');
 const redis = require('redis'),client = redis.createClient(process.env.REDIS_URL);
+const moment = require('moment');
 const db = require('./queries');
 const {sample} = require('lodash');
 
 module.exports = function (app) {
-
+    client.keys("alice*", function(err, rows) {
+        for(var i = 0, j = rows.length; i < j; ++i) {
+            client.del(rows[i])
+        }
+    });
     const getValues = (req, attrs, skill_id) => {
         return new Promise((resolve, reject) => {
           if (skill_id === "96a9f802-2aba-4626-8fa5-bf10fb9b1110")  {
@@ -81,8 +86,9 @@ module.exports = function (app) {
                 if (!reply){
                     let skill = session.skill_id;
                     return db.getAliceFirstSentence(skill).then(q => {
-                            let sess_obj = {sentence_id : q.id, fail_num: 0, skill_object:{}};
+                            let sess_obj = {sentence_id : q.id, fail_num: 0, skill_object:{}, created: moment().format(), updated: moment().format()};
                             client.set("alice:" + session.session_id, JSON.stringify(sess_obj));
+                            client.expireat("alice:" + session.session_id, parseInt((+new Date)/1000) + 3600);
                             resolve({sentence:q.sentence, last:false});
                         }).catch((err) => {
                             debug("getAliceFirstSentence", err.message)
@@ -126,9 +132,10 @@ module.exports = function (app) {
     }
 
     app.post("/api/alice/fatcalc", (req, res) => {
+        db.createAliceLog(req.body.session.session_id, "req", req.body);
         getAnswer(req.body.session, req.body.request).then((dat, end) => {
             const sentence = eval("`" + dat.sentence.text + "`")
-            res.send({
+            let response = {
                 session : req.body.session,
                 version : req.body.version,
                 response: {
@@ -136,10 +143,12 @@ module.exports = function (app) {
                     tts : sentence,
                     "end_session": dat.last
                 }
-            })
+            }
+            db.createAliceLog(req.body.session.session_id, "res", response);
+            res.send(response)
         }).catch((err) => {
             debug("getAnswer", '{ERROR}', err.message)
-            res.send({
+            let response = {
                 session : req.body.session,
                 version : req.body.version,
                 response: {
@@ -147,7 +156,9 @@ module.exports = function (app) {
                     tts : "Что то пошло не так. Повторите позже",
                     "end_session": true
                 }
-            })
+            }
+            db.createAliceLog(req.body.session.session_id, "res", response);
+            res.send(response)
         });
 
 
