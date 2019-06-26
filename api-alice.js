@@ -111,7 +111,7 @@ module.exports = function (app) {
                                         let result = getResultCode(sess_obj.skill_object, session.skill_id);
                                         resolve({sentence:q.sentence[result], last:true});
                                     } else {
-                                        resolve({sentence:q.sentence, last:true});
+                                        resolve({sentence:q.sentence, last:false});
                                     }
                                 }).catch((err) => {
                                     debug("getAliceSentence", '{GO TO NEXT}', err.message)
