@@ -25,7 +25,7 @@ module.exports = function (app) {
                           cnt++;
                       });
                       if (cnt === 1){
-                          if (parseInt(height) < 150 || parseInt(height) > 220) {
+                          if (parseInt(height) < 140 || parseInt(height) > 220) {
                               reject("NOT_HEIGHT_INTERVAL");
                           } else {
                               values.push({height})
