@@ -72,9 +72,15 @@ module.exports = function (app) {
     }
     const getHelp = (skill_id)=> {
         if (skill_id === "96a9f802-2aba-4626-8fa5-bf10fb9b1110") {
-            return {text:"Я калькулятор индекса массы тела. В процессе диалога я спрошу у вас рост и вес. По итогам рассчитаю ваш индекс."};
+            return {text:"Я калькулятор индекса массы тела. В процессе диалога я спрошу у вас рост и вес. По итогам рассчитаю ваш индекс и что-нибудь пожелаю."};
         }
     }
+
+    const setRedisValue = (session_id, obj) => {
+        client.set("alice:" + session_id, JSON.stringify(obj));
+        client.expireat("alice:" + session_id, parseInt((+new Date)/1000) + 3600);
+    }
+
 
     const getAnswer = (session, req) => {
         return new Promise((resolve, reject) => {
@@ -87,8 +93,7 @@ module.exports = function (app) {
                     let skill = session.skill_id;
                     return db.getAliceFirstSentence(skill).then(q => {
                             let sess_obj = {sentence_id : q.id, fail_num: 0, skill_object:{}, created: moment().format(), updated: moment().format()};
-                            client.set("alice:" + session.session_id, JSON.stringify(sess_obj));
-                            client.expireat("alice:" + session.session_id, parseInt((+new Date)/1000) + 3600);
+                            setRedisValue(session.session_id, sess_obj);
                             resolve({sentence:q.sentence, last:false});
                         }).catch((err) => {
                             debug("getAliceFirstSentence", err.message)
@@ -101,12 +106,12 @@ module.exports = function (app) {
                     return db.getAliceSentence(current_sentence_id).then(q => {
                             return getValues(req, q.reply_attr, session.skill_id).then(values => {
                                 values.forEach(item => sess_obj.skill_object[Object.keys(item)[0]] = Object.values(item)[0]);
-                                client.set("alice:" + session.session_id, JSON.stringify(sess_obj));
+                                setRedisValue(session.session_id, sess_obj);
                                 /* переходим к следующему вопросу */
                                 return db.getAliceSentence(q.next_id).then(q => {
                                     sess_obj.sentence_id = q.id;
                                     sess_obj.fail_num = 0;
-                                    client.set("alice:" + session.session_id, JSON.stringify(sess_obj));
+                                    setRedisValue(session.session_id, sess_obj);
                                     if (q.flag === "E") {
                                         let result = getResultCode(sess_obj.skill_object, session.skill_id);
                                         resolve({sentence:q.sentence[result], last:true});
@@ -119,7 +124,7 @@ module.exports = function (app) {
                                 })
                             }).catch(err => {
                                 sess_obj.fail_num++;
-                                client.set("alice:" + session.session_id, JSON.stringify(sess_obj));
+                                setRedisValue(session.session_id, sess_obj);
                                 resolve({sentence:q.sentence_error[err], last:false});
                             })
                         }).catch((err) => {
@@ -132,7 +137,10 @@ module.exports = function (app) {
     }
 
     app.post("/api/alice/fatcalc", (req, res) => {
-        db.createAliceLog(req.body.session.session_id, "req", req.body);
+        let ping = req.body.request.command === "ping" ? "Y" : "N";
+        let session_id = req.body.session.session_id;
+        let skill_id = req.body.session.skill_id;
+        logAlice(session_id, skill_id, "req", req.body, ping, req.body.request.command);
         getAnswer(req.body.session, req.body.request).then((dat, end) => {
             const sentence = eval("`" + dat.sentence.text + "`")
             let response = {
@@ -144,10 +152,10 @@ module.exports = function (app) {
                     "end_session": dat.last
                 }
             }
-            db.createAliceLog(req.body.session.session_id, "res", response);
+            logAlice(session_id, skill_id, "res", response, ping, response.response.text);
             res.send(response)
         }).catch((err) => {
-            debug("getAnswer", '{ERROR}', err.message)
+            debug("getAnswer", '{ERROR}', err.message);
             let response = {
                 session : req.body.session,
                 version : req.body.version,
@@ -157,13 +165,35 @@ module.exports = function (app) {
                     "end_session": true
                 }
             }
-            db.createAliceLog(req.body.session.session_id, "res", response);
+            db.createAliceLog(req.body.session.session_id, "res", response, ping, response.response.text);
             res.send(response)
         });
 
 
 
     });
+
+    const logAlice = (session_id, skill_id, type, body, ping, text) => {
+        if (ping === "Y") {
+            return db.getAlicePingbySkill(skill_id, type).then(log => {
+                if (log.length > 0){
+                    return db.updateAlicePingbySkill(session_id, skill_id, type, text).catch((err) => {
+                        debug("updateAlicePingbySkill", '{ERROR}', err.message)
+                    })
+                } else {
+                    return db.insertAlicePingbySkill(session_id, skill_id, type, text).catch((err) => {
+                        debug("insertAlicePingbySkill", '{ERROR}', err.message)
+                    })
+                }
+            }).catch((err) => {
+                debug("getAlicePingbySkill", '{ERROR}', err.message)
+            })
+        } else {
+            return db.createAliceLog(session_id, skill_id, type, body, text).catch((err) => {
+                debug("createAliceLog", '{ERROR}', err.message)
+            });
+        }
+    }
 
     const sendNewLead = (mail) => {
         var transporter = nodemailer.createTransport({

@@ -257,10 +257,24 @@ create index t_alice_sentence_index
 alter table t_alice_sentence add column next_id INT;
 alter table t_alice_sentence add column sentence_error JSON;
 
-/*     DONE       */
 create table t_alice_log (
     session_id varchar(36),
     created TIMESTAMPTZ default now() not null,
     type  varchar(100),
     body  JSON
 );
+/*     DONE       */
+alter table t_alice_log add column skill_id varchar(36);
+alter table t_alice_log add column updated TIMESTAMPTZ default now() not null;
+
+CREATE TRIGGER set_timestamp_t_alice_log
+  BEFORE UPDATE ON t_alice_log
+  FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
+
+alter table t_alice_log add column ping varchar(1) default 'N';
+
+create index t_alice_log_skill_id_ping_index
+  on t_alice_log (skill_id, type, ping);
+
+alter table t_alice_log add column text varchar(4000);

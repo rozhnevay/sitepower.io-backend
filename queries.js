@@ -67,7 +67,10 @@ module.exports = {
     getPaymentByYaId:getPaymentByYaId,
     getAliceFirstSentence:getAliceFirstSentence,
     getAliceSentence:getAliceSentence,
-    createAliceLog:createAliceLog
+    createAliceLog:createAliceLog,
+    getAlicePingbySkill: getAlicePingbySkill,
+    updateAlicePingbySkill: updateAlicePingbySkill,
+    insertAlicePingbySkill: insertAlicePingbySkill
 };
 
 function getUserByLogin(login) {
@@ -432,6 +435,20 @@ function getAliceSentence(sentence_id) {
     return db.one(`select * from t_alice_sentence where id=$1`, sentence_id);
 }
 
-function createAliceLog(session_id, type, body) {
-    return db.none(`insert into t_alice_log(session_id, type, body) values($1, $2, $3)`, [session_id, type, body]);
+function createAliceLog(session_id, skill_id, type, body, text) {
+    return db.none(`insert into t_alice_log(session_id, type, body, skill_id, text) values($1, $2, $3, $4, $5)`, [session_id, type, body, skill_id, text]);
 }
+
+
+function getAlicePingbySkill(skill_id, type) {
+    return db.any(`select * from t_alice_log where skill_id=$1 and type=$2 and ping = 'Y'`, [skill_id, type]);
+}
+
+function updateAlicePingbySkill (session_id, skill_id, type, text) {
+    return db.none(`update t_alice_log set session_id=$1, text=$4 where skill_id=$2 and type=$3 and ping = 'Y'`, [session_id, skill_id, type, text]);
+}
+
+function insertAlicePingbySkill(session_id, skill_id, type, text) {
+    return db.none(`insert into t_alice_log(session_id, skill_id, type, text, ping) values($1, $2, $3, $4, 'Y')`, [session_id, skill_id, type, text]);
+}
+
