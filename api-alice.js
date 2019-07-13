@@ -249,12 +249,12 @@ module.exports = function (app) {
 
     const generateButtonsTrain = (obj) => {
         let buttons = []
-        buttons.push({title: "Старт"})
+        buttons.push({title: "⚡ Старт ⚡"})
         obj.train.plan.sort((a, b) => a.seq - b.seq).forEach(item => {
             let exercise = getExercise(item.name);
             buttons.push({title: exercise});
         })
-        buttons.push({title: "Закончить"})
+        buttons.push({title: "🏁 Закончить 🏁"})
         return buttons;
     }
 
@@ -382,7 +382,7 @@ module.exports = function (app) {
                     }
                     return db.getAliceSentence(current_sentence_id).then(q => {
                             if (/помощь/i.test(req.command) || /что ты умеешь/i.test(req.command)) {
-                                q.sentence.text = getHelp(session.skill_id).text + "\n" + eval("`" + q.sentence.text + "`");
+                                q.sentence.text = getHelp(session.skill_id).text + "\n\n" + eval("`" + q.sentence.text + "`");
                                 resolve({sentence:q.sentence, last:false});
                             }
                             return getValues(req, q.reply_attr, session.skill_id).then(values => {
@@ -444,8 +444,8 @@ module.exports = function (app) {
                 response: {
                     text : sentence,
                     tts : sentence,
-                    buttons: dat.sentence.buttons,
                     card: dat.sentence.card,
+                    buttons: dat.sentence.buttons,
                     "end_session": dat.last
                 }
             }
