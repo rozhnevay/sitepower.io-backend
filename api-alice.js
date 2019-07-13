@@ -1,3 +1,4 @@
+const moment = require('moment');
 const debug = require('debug')('sitepower.io-backend:api-alice');
 const nodemailer = require('nodemailer');
 const redis = require('redis'),client = redis.createClient(process.env.REDIS_URL);
