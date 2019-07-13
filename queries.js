@@ -70,7 +70,8 @@ module.exports = {
     createAliceLog:createAliceLog,
     getAlicePingbySkill: getAlicePingbySkill,
     updateAlicePingbySkill: updateAlicePingbySkill,
-    insertAlicePingbySkill: insertAlicePingbySkill
+    insertAlicePingbySkill: insertAlicePingbySkill,
+    getAliceLastSentence: getAliceLastSentence
 };
 
 function getUserByLogin(login) {
@@ -450,5 +451,9 @@ function updateAlicePingbySkill (session_id, skill_id, type, text) {
 
 function insertAlicePingbySkill(session_id, skill_id, type, text) {
     return db.none(`insert into t_alice_log(session_id, skill_id, type, text, ping) values($1, $2, $3, $4, 'Y')`, [session_id, skill_id, type, text]);
+}
+
+function getAliceLastSentence(skill_id) {
+    return db.one(`select * from t_alice_sentence where skill_id = $1 and flag = 'E'`, skill_id);
 }
 

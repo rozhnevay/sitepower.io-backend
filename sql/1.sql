@@ -263,7 +263,7 @@ create table t_alice_log (
     type  varchar(100),
     body  JSON
 );
-/*     DONE       */
+
 alter table t_alice_log add column skill_id varchar(36);
 alter table t_alice_log add column updated TIMESTAMPTZ default now() not null;
 
@@ -278,3 +278,7 @@ create index t_alice_log_skill_id_ping_index
   on t_alice_log (skill_id, type, ping);
 
 alter table t_alice_log add column text varchar(4000);
+
+
+alter table t_alice_sentence add column next_decl JSON;
+/*     DONE       */
