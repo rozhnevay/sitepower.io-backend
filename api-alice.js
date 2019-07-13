@@ -445,6 +445,7 @@ module.exports = function (app) {
                     text : sentence,
                     tts : sentence,
                     buttons: dat.sentence.buttons,
+                    card: dat.sentence.card,
                     "end_session": dat.last
                 }
             }
