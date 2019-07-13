@@ -242,8 +242,10 @@ module.exports = function (app) {
         let all_duration = Math.round((obj.train.end_time - obj.train.start_time)/1000);
         let last_round_duration = Math.round((obj.train.end_time - obj.train.round_start)/1000);
         let desc = `${sample(['Вы выполнили последний круг', 'Последний круг был пройден', 'Последний круг прошли'])} за ${getDurationStr(last_round_duration)}.\n`
-        desc += `${sample(['Общая длительность тренировки', 'Тренировка длилась'])} ${getDurationStr(all_duration)}. `;
-        desc += `${sample(['Количество полностью выполненных', 'Количество успешно пройденных'])}  кругов - ${obj.train.finished_round}`;
+        if (obj.train.finished_round > 1 )  {
+            desc += `\n${sample(['Общая длительность тренировки', 'Тренировка длилась'])} ${getDurationStr(all_duration)}. `;
+        }
+        desc += `\n${sample(['Количество полностью выполненных', 'Количество успешно пройденных'])}  кругов - ${obj.train.finished_round}`;
         return desc;
     }
 
@@ -368,7 +370,7 @@ module.exports = function (app) {
                     const current_sentence_id = sess_obj.sentence_id;
 
                     if (session.skill_id === "d3c624cc-2b82-4594-9a7a-33d8f60a5e59" && /закончить/i.test(req.command)) {
-                        return db.getAliceLastSentence(session.skill_id).then(q => {
+                        return db.getAliceSentence(5).then(q => {
                             sess_obj.sentence_id = q.id;
                             sess_obj.fail_num = 0;
                             setRedisValue(session.session_id, sess_obj);
