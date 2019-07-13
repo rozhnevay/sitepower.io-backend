@@ -238,6 +238,15 @@ module.exports = function (app) {
         return minutes > 0 ? minutes + " " + minutes_label + " " + seconds + " " + seconds_label  : seconds + " " + seconds_label;
     };
 
+    const getResultDesc = (obj) => {
+        let all_duration = Math.round((obj.train.end_time - obj.train.start_time)/1000);
+        let last_round_duration = Math.round((obj.train.end_time - obj.train.round_start)/1000);
+        let desc = `${sample(['Вы выполнили последний круг', 'Последний круг был пройден', 'Последний круг прошли'])} за ${getDurationStr(last_round_duration)}.\n`
+        desc += `${sample(['Общая длительность тренировки', 'Тренировка длилась'])} ${getDurationStr(all_duration)}. `;
+        desc += `${sample(['Количество полностью выполненных', 'Количество успешно пройденных'])}  кругов - ${obj.train.finished_round}`;
+        return desc;
+    }
+
     const generateButtonsTrain = (obj) => {
         let buttons = []
         buttons.push({title: "Старт"})
@@ -338,6 +347,7 @@ module.exports = function (app) {
     }
 
     const getAnswer = (session, req) => {
+        //req.command =
         return new Promise((resolve, reject) => {
             client.get("alice:" + session.session_id, (err, reply) => {
 
@@ -435,7 +445,6 @@ module.exports = function (app) {
                     text : sentence,
                     tts : sentence,
                     buttons: dat.sentence.buttons,
-                    actions: [{text:"Оценить", url: "https://nlpsolutions.ru"}],
                     "end_session": dat.last
                 }
             }
