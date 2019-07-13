@@ -370,7 +370,7 @@ module.exports = function (app) {
                     const current_sentence_id = sess_obj.sentence_id;
 
                     if (session.skill_id === "d3c624cc-2b82-4594-9a7a-33d8f60a5e59" && /закончить/i.test(req.command)) {
-                        return db.getAliceSentence(5).then(q => {
+                        return db.getAliceLastSentence(session.skill_id).then(q => {
                             sess_obj.sentence_id = q.id;
                             sess_obj.fail_num = 0;
                             setRedisValue(session.session_id, sess_obj);
@@ -443,6 +443,9 @@ module.exports = function (app) {
         let session_id = req.body.session.session_id;
         let skill_id = req.body.session.skill_id;
         logAlice(session_id, skill_id, "req", req.body, ping, req.body.request.command);
+        if (!req.body.request.command && req.body.request.type === "ButtonPressed" && req.body.request.payload) {
+            req.body.request.command = req.body.request.payload.command;
+        }
         getAnswer(req.body.session, req.body.request).then((dat, end) => {
             const sentence = eval("`" + dat.sentence.text + "`")
             let response = {
