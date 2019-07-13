@@ -382,7 +382,12 @@ module.exports = function (app) {
                     }
                     return db.getAliceSentence(current_sentence_id).then(q => {
                             if (/помощь/i.test(req.command) || /что ты умеешь/i.test(req.command)) {
-                                q.sentence.text = getHelp(session.skill_id).text + "\n\n" + eval("`" + q.sentence.text + "`");
+                                if (q.sentence && q.sentence.text) {
+                                    q.sentence.text = getHelp(session.skill_id).text + "\n\n" + eval("`" + q.sentence.text + "`");
+                                } else {
+                                    q.sentence.text = getHelp(session.skill_id).text;
+                                }
+
                                 resolve({sentence:q.sentence, last:false});
                             }
                             return getValues(req, q.reply_attr, session.skill_id).then(values => {
