@@ -282,3 +282,21 @@ alter table t_alice_log add column text varchar(4000);
 
 alter table t_alice_sentence add column next_decl JSON;
 /*     DONE       */
+create sequence t_program_id_seq
+  as integer
+  maxvalue 2147483647;
+
+create table t_program (
+       id integer DEFAULT nextval('t_program_id_seq'::regclass),
+       created TIMESTAMPTZ default now() not null,
+       updated TIMESTAMPTZ default now() not null,
+       level integer,
+       duration integer,
+       name varchar(1000)
+);
+
+CREATE TRIGGER set_timestamp_t_program
+  BEFORE UPDATE ON t_program
+  FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
+

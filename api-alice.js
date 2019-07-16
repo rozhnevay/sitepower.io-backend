@@ -20,22 +20,22 @@ module.exports = function (app) {
         easy : [
             {name: "pushups", count:"10", quantity : "items"},
             {name: "squats", count:"10", quantity : "items"},
-            {name: "bepery", count:"10", quantity : "items"},
-            {name: "plank", count:"60", quantity : "secs"},
+            {name: "bepery", count:"5", quantity : "items"},
+            {name: "plank", count:"30", quantity : "secs"},
             {name: "jumping", count:"30", quantity : "items"},
             {name: "forward", count:"20", quantity : "items"},
             {name: "chair", count:"30", quantity : "secs"},
-            {name: "down", count:"10", quantity : "items"}
+            {name: "down", count:"5", quantity : "items"}
         ],
         normal: [
             {name: "pushups", count:"15", quantity : "items"},
-            {name: "squats", count:"20", quantity : "items"},
-            {name: "bepery", count:"10", quantity : "items"},
-            {name: "plank", count:"90", quantity : "secs"},
+            {name: "squats", count:"15", quantity : "items"},
+            {name: "bepery", count:"7", quantity : "items"},
+            {name: "plank", count:"60", quantity : "secs"},
             {name: "jumping", count:"40", quantity : "items"},
-            {name: "forward", count:"30", quantity : "items"},
+            {name: "forward", count:"25   ", quantity : "items"},
             {name: "chair", count:"60", quantity : "secs"},
-            {name: "down", count:"15", quantity : "items"}
+            {name: "down", count:"7", quantity : "items"}
         ],
         hard: [
             {name: "pushups", count:"15", quantity : "items"},
@@ -386,6 +386,7 @@ module.exports = function (app) {
                             if (/помощь/i.test(req.command) || /что ты умеешь/i.test(req.command)) {
                                 if (q.sentence && q.sentence.text) {
                                     q.sentence.text = getHelp(session.skill_id).text + "\n\n" + eval("`" + q.sentence.text + "`");
+                                    q.sentence.buttons === "generateButtonsTrain" ? q.sentence.buttons = generateButtonsTrain(sess_obj.skill_object) : q.sentence.buttons;
                                 } else {
                                     q.sentence.text = getHelp(session.skill_id).text;
                                 }
