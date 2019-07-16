@@ -385,6 +385,7 @@ module.exports = function (app) {
                     return db.getAliceSentence(current_sentence_id).then(q => {
                             if (/помощь/i.test(req.command) || /что ты умеешь/i.test(req.command)) {
                                 if (q.sentence && q.sentence.text) {
+                                    delete q.sentence.card;
                                     q.sentence.text = getHelp(session.skill_id).text + "\n\n" + eval("`" + q.sentence.text + "`");
                                     q.sentence.buttons === "generateButtonsTrain" ? q.sentence.buttons = generateButtonsTrain(sess_obj.skill_object) : q.sentence.buttons;
                                 } else {
