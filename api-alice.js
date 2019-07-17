@@ -175,7 +175,7 @@ module.exports = function (app) {
         if (skill_id === "96a9f802-2aba-4626-8fa5-bf10fb9b1110") {
             return {text:"Я калькулятор индекса массы тела. В процессе диалога я спрошу у вас рост и вес. По итогам рассчитаю ваш индекс и что-нибудь пожелаю."};
         } else if (skill_id === "d3c624cc-2b82-4594-9a7a-33d8f60a5e59") {
-            return {text:"Я ваш тренер по фитнесу. Вам будет предложена на выбор интенсивность тренировки. После старта будут последовательно объявляться упражнения. При необходимости, вы можете уточнить технику выполнения, назвав интересующее упражнение. Вы всегда можете выйти из тренировки, сказав «Закончить». По итогам тренировки будет объявлен ваш результат."};
+            return {text:"Я ваш тренер по фитнесу. Вам будет предложена на выбор интенсивность тренировки. После старта будут последовательно объявляться упражнения. При необходимости, вы можете уточнить технику выполнения, назвав интересующее упражнение. Вы всегда можете выйти из тренировки, сказав «Финиш». По итогам тренировки будет объявлен ваш результат."};
         }
     }
 
@@ -191,18 +191,26 @@ module.exports = function (app) {
                 name === "bepery" ? "Берпи" :
                 name === "plank" ? "Планка" :
                 name === "jumping" ? "Jumping Jack" :
-                name === "forward" ? "Выпады вперёд" :
+                name === "forward" ? "Выпады вперёд на каждую ногу" :
                 name === "chair" ? "Стульчик": "Выпрыгивания из приседа";
     }
 
-    const getTrainingDesc = (obj) => {
-        let desc = ""
+    const getTrainingDesc = (obj) => getTraining(obj).text;
+    const getTrainingTts = (obj) => getTraining(obj).tts;
+
+    const getTraining = (obj) => {
+        let text = "";
+        let tts = "";
+        if (obj.train.plan) {
+            tts = "- - - - - -";
+        }
         obj.train.plan.sort((a, b) => a.seq - b.seq).forEach(item => {
             let exercise = getExercise(item.name);
-            let count = item.quantity === "items" ? item.count + " раз" :  item.count + " сек";
-            desc = desc + "\n" + exercise + " - " + count;
+            let count = item.quantity === "items" ? item.count + " раз" :  item.count + " секунд";
+            text = text + "\n" + exercise + " - " + count;
+            tts = tts + " - - - " + exercise + " - - " + count;
         })
-        return desc
+        return {text, tts};
     }
 
     const getTrainingNextDesc = (obj) => {
@@ -256,7 +264,7 @@ module.exports = function (app) {
             let exercise = getExercise(item.name);
             buttons.push({title: exercise});
         })
-        buttons.push({title: "🏁 Закончить 🏁"})
+        buttons.push({title: "Повторить"});
         return buttons;
     }
 
@@ -369,13 +377,16 @@ module.exports = function (app) {
                     let sess_obj = JSON.parse(reply);
                     const current_sentence_id = sess_obj.sentence_id;
 
-                    if (session.skill_id === "d3c624cc-2b82-4594-9a7a-33d8f60a5e59" && /закончить/i.test(req.command)) {
+                    if (session.skill_id === "d3c624cc-2b82-4594-9a7a-33d8f60a5e59" && /финиш/i.test(req.command)) {
                         return db.getAliceLastSentence(session.skill_id).then(q => {
                             sess_obj.sentence_id = q.id;
                             sess_obj.fail_num = 0;
                             setRedisValue(session.session_id, sess_obj);
                             let result = getResultCode(sess_obj.skill_object, session.skill_id);
                             q.sentence[result].text = eval("`" + q.sentence[result].text + "`")
+                            if (q.sentence[result].tts) {
+                                q.sentence[result].tts = eval("`" + q.sentence[result].tts + "`")
+                            }
                             resolve({sentence:q.sentence[result], last:true});
                         }).catch((err) => {
                             debug("getAliceSentence", '{GO TO NEXT}', err.message)
@@ -387,6 +398,10 @@ module.exports = function (app) {
                                 if (q.sentence && q.sentence.text) {
                                     delete q.sentence.card;
                                     q.sentence.text = getHelp(session.skill_id).text + "\n\n" + eval("`" + q.sentence.text + "`");
+                                    if (q.sentence.tts) {
+                                        q.sentence.tts = getHelp(session.skill_id).text + "\n\n" + eval("`" + q.sentence.tts + "`");
+                                    }
+
                                     q.sentence.buttons === "generateButtonsTrain" ? q.sentence.buttons = generateButtonsTrain(sess_obj.skill_object) : q.sentence.buttons;
                                 } else {
                                     q.sentence.text = getHelp(session.skill_id).text;
@@ -410,11 +425,17 @@ module.exports = function (app) {
                                         setRedisValue(session.session_id, sess_obj);
                                         if (q.flag === "E") {
                                             let result = getResultCode(sess_obj.skill_object, session.skill_id);
-                                            q.sentence[result].text = eval("`" + q.sentence[result].text + "`")
+                                            q.sentence[result].text = eval("`" + q.sentence[result].text + "`");
+                                            if (q.sentence[result].tts) {
+                                                q.sentence[result].tts = eval("`" + q.sentence[result].tts + "`");
+                                            }
                                             resolve({sentence:q.sentence[result], last:true});
                                         } else {
                                             q.sentence.buttons === "generateButtonsTrain" ? q.sentence.buttons = generateButtonsTrain(sess_obj.skill_object) : q.sentence.buttons;
                                             q.sentence.text = eval("`" + q.sentence.text + "`");
+                                            if (q.sentence.tts) {
+                                                q.sentence.tts = eval("`" + q.sentence.tts + "`");
+                                            }
                                             resolve({sentence:q.sentence, last:false});
                                         }
                                     }).catch((err) => {
@@ -450,12 +471,19 @@ module.exports = function (app) {
         }
         getAnswer(req.body.session, req.body.request).then((dat, end) => {
             const sentence = eval("`" + dat.sentence.text + "`")
+            let tts = "";
+            if (dat.sentence.tts) {
+                tts = eval("`" + dat.sentence.tts + "`");
+            } else {
+                tts = sentence;
+            }
+
             let response = {
                 session : req.body.session,
                 version : req.body.version,
                 response: {
                     text : sentence,
-                    tts : sentence,
+                    tts : tts,
                     card: dat.sentence.card,
                     buttons: dat.sentence.buttons,
                     "end_session": dat.last
