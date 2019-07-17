@@ -249,7 +249,7 @@ module.exports = function (app) {
     const getResultDesc = (obj) => {
         let all_duration = Math.round((obj.train.end_time - obj.train.start_time)/1000);
         let last_round_duration = Math.round((obj.train.end_time - obj.train.round_start)/1000);
-        let desc = `${sample(['Вы выполнили последний круг', 'Последний круг был пройден', 'Последний круг прошли'])} за ${getDurationStr(last_round_duration)}.\n`
+        let desc = `${sample(['Время прохождения последнего круга - '])} ${getDurationStr(last_round_duration)}.\n`
         if (obj.train.finished_round > 1 )  {
             desc += `\n${sample(['Общая длительность тренировки', 'Тренировка длилась'])} ${getDurationStr(all_duration)}. `;
         }
