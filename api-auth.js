@@ -43,8 +43,13 @@ module.exports = function (app, authMiddleware, passport) {
                 if (err) return next(err);
                 db.createUser(req.body.email, hash, req.body.name).then((data) => {
                     return db.getUserById(data.id).then((user) => {
-                        return db.createForm(user.id, process.env.HOST, 'Y').then(() => {
+                        /*return db.createForm(user.id, process.env.HOST, 'Y').then(() => {
                             req.login(user, err => res.send(user));
+                        }).catch((err) => res.status(400).send(err.toString()))*/
+                        return getNewTrainNum().then((num) => {
+                            createTestTrain(num, user.id).then(() => {
+                                req.login(user, err => res.send(user));
+                            }).catch((err) => res.status(400).send(err.toString()))
                         }).catch((err) => res.status(400).send(err.toString()))
                     }).catch((err) => res.status(400).send(err.toString()))
                 }).catch((err) => res.status(400).send(err.toString()));
@@ -157,7 +162,7 @@ module.exports = function (app, authMiddleware, passport) {
             //     }).catch(err => res.status(400).send(err.message))
             // })
         }
-    })
+    });
 
 
 
@@ -176,7 +181,7 @@ module.exports = function (app, authMiddleware, passport) {
         } else {
             throw "Email address is missing";
         }
-    })
+    });
 
     app.get("/api/device/:token", authMiddleware, (req, res) => {
         debug("/api/device/:token", "GET", req.params.token);
@@ -188,7 +193,7 @@ module.exports = function (app, authMiddleware, passport) {
                 debug("/api/device/:token", req.session.passport.user, err.message);
                 res.status(400).send("Cannot get token");
             })
-    })
+    });
 
     app.post("/api/device", authMiddleware, (req, res) => {
         debug("/api/device", "POST", req.body)
@@ -198,7 +203,7 @@ module.exports = function (app, authMiddleware, passport) {
                 debug("/api/device", req.session.passport.user, err.message);
                 res.status(400).send("Error on creating token");
             })
-    })
+    });
 
     app.delete("/api/device/:token", authMiddleware, (req, res) => {
         debug("/api/device", "DELETE", req.params.token);
@@ -208,5 +213,35 @@ module.exports = function (app, authMiddleware, passport) {
                 debug("/api/device", "DELETE", req.params.token);
                 res.status(400).send("Error on deleting token");
             })
-    })
+    });
+
+    const getNewTrainNum = (cnt_fail) => {
+        return new Promise((resolve, reject) => {
+            let num = Math.floor(100000 + Math.random() * 900000);
+            cnt_fail = cnt_fail ? cnt_fail : 0;
+            if (cnt_fail > 100) {
+                return reject("NO_TRAIN_NUM");
+            }
+            db.getTrainByNum(num).then(train => {
+                cnt_fail++;
+                return getNewTrainNum(cnt_fail).then(num => resolve(num)).catch(err => reject(err));
+            }).catch((err) => {
+                if (err === "NO_TRAIN_NUM") {
+                    return reject(err)
+                } else {
+                    return resolve(num)
+                }
+            })
+        })
+    }
+
+    const createTestTrain = (num, user_id) => {
+        return new Promise((resolve, reject) => {
+            let fact_obj = {};
+            fact_obj = [{name: "bepery", count:"5", quantity : "items"},{name: "pushups", count:"10", quantity : "secs"},{name: "jumping", count:"30", quantity : "secs"},{name: "plank", count:"60", quantity : "secs"}];
+            return db.insertTrain(num, user_id, 'Пробная тренировка', 6, JSON.stringify(fact_obj))
+                .then(() => resolve())
+                .catch(err => reject(err));
+        })
+    }
 }

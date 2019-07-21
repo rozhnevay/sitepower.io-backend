@@ -282,21 +282,40 @@ alter table t_alice_log add column text varchar(4000);
 
 alter table t_alice_sentence add column next_decl JSON;
 /*     DONE       */
-create sequence t_program_id_seq
+create sequence t_train_item_id_seq
   as integer
   maxvalue 2147483647;
 
-create table t_program (
-       id integer DEFAULT nextval('t_program_id_seq'::regclass),
+create table t_train_item (
+       id integer DEFAULT nextval('t_train_item_id_seq'::regclass),
        created TIMESTAMPTZ default now() not null,
        updated TIMESTAMPTZ default now() not null,
-       level integer,
-       duration integer,
-       name varchar(1000)
+       train_num integer,
+       user_id integer not null,
+       status varchar(100) default 'NEW' not null,
+       name varchar(1000),
+       next_id integer not null,
+       train_obj json,
+       fact_obj json,
+       finish_dt TIMESTAMPTZ
 );
 
-CREATE TRIGGER set_timestamp_t_program
-  BEFORE UPDATE ON t_program
+CREATE TRIGGER set_timestamp_t_train_item
+  BEFORE UPDATE ON t_train_item
   FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
+alter table t_train_item
+  add constraint t_train_item_pk
+    primary key (id);
+
+create unique index t_train_item_num
+  on t_train_item (train_num);
+
+create index t_train_item_user_id
+  on t_train_item (user_id);
+
+create index t_train_item_created
+  on t_train_item (created);
+
+alter table t_alice_sentence add column next_decl_oth_handler varchar(100);

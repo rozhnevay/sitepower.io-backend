@@ -7,7 +7,6 @@ const round = require("lodash/math").round;
 const {sample} = require('lodash');
 const axios = require('axios');
 const httpClient = axios.create();
-httpClient.defaults.baseURL = "https://sitepower-nlp.herokuapp.com";
 httpClient.defaults.timeout = 1000;
 
 module.exports = function (app) {
@@ -72,9 +71,43 @@ module.exports = function (app) {
             }
         }
         return {plan: training};
-        }
+    };
 
-    const getValues = (req, attrs, skill_id) => {
+    const getTrainNum = (nlu) => {
+        let trainNumStr = "";
+        nlu.entities.filter(item => {
+            return item.type === "YANDEX.NUMBER"
+        }).forEach(item => {
+            trainNumStr += item.value;
+        });
+        if (parseInt(trainNumStr)) {
+            return parseInt(trainNumStr);
+        }
+        return -1;
+    };
+    const getIndividualTrain = (num) => {
+        return new Promise((resolve, reject) => {
+            /* ищем треню, */
+            return db.getTrainByNum(num).then(train => {
+                let values = [];
+                if (train && train.status === "NEW") {
+                    values.push({intensity : "individual"});
+                    values.push({train_num : train.train_num});
+                    values.push({user_name : train.user_name});
+                    values.push({train : {plan : train.train_obj}});
+                    resolve(values);
+                } else if (train && train.status === "COMPLETED") {
+
+                    reject("TRAIN_COMPLETED");
+                } else {
+                    reject("NO_TRAIN");
+                }
+
+            }).catch(err => reject("NO_TRAIN"))
+        })
+    };
+
+    const getValues = (req, attrs, skill_id, sess_obj) => {
         return new Promise((resolve, reject) => {
           if (!attrs) {
               resolve([]);
@@ -127,23 +160,110 @@ module.exports = function (app) {
                   let train = generateTrain(type);
                   values.push({intensity : type})
                   values.push({train})
-              }
+              };
+              // собираем номер тренировки из чисел
+
+
               attrs.forEach(attr => {
                   if (attr === "intensity") {
                       found = true;
-                      httpClient.post("https://sitepower-nlp.herokuapp.com", {data : req.command}).then(res => {
-                          debug("{getValues - NLP Response}", res.data)
-                          if (res.data !== "NO_ANSWER") {
-                              /легкая/i.test(res.data) ? getTrain("easy") : /обычная/i.test(res.data) ? getTrain("normal") : (/высокая/i.test(res.data)) ? getTrain("hard") : reject("NO_INTENSITY");
+                      /* сначала проверяем по регулярным выражениям */
+                      if (/легкая/i.test(req.command)) {
+                          getTrain("easy"); resolve(values);
+                      } else if (/обычная/i.test(req.command)) {
+                          getTrain("normal"); resolve(values);
+                      } else if (/высокая/i.test(req.command)) {
+                          getTrain("hard"); resolve(values);
+                      } else {
+                          /* проверяем номер тренировки, вдруг это индивидуальная */
+                          let trainNum = getTrainNum(req.nlu);
+                          if (trainNum > -1) {
+                              getIndividualTrain(trainNum).then(res_vals => resolve(res_vals)).catch(err => reject(err));
                           } else {
-                              reject("NO_INTENSITY");
+                              /* идём в NLP, чтобы всё-таки попытаться расшифровать, что там нам сказали */
+                              httpClient.post("https://sitepower-nlp.herokuapp.com", {data : req.command}).then(res => {
+                                  if (res.data !== "NO_ANSWER") {
+                                      /легкая/i.test(res.data) ? getTrain("easy") : /обычная/i.test(res.data) ? getTrain("normal") : (/высокая/i.test(res.data)) ? getTrain("hard") : reject("NO_INTENSITY");
+                                      resolve(values);
+                                  } else {
+                                      reject("NO_INTENSITY");
+                                  }
+                              }).catch(err => {
+                                  debug("sitepower-nlp", err.message);
+                                  reject("NO_INTENSITY");
+                              });
                           }
-                          resolve(values);
-                      }).catch(err => {
-                          debug("sitepower-nlp", err.message);
-                          /легкая/i.test(req.command) ? getTrain("easy") : /обычная/i.test(req.command) ? getTrain("normal") : (/высокая/i.test(req.command)) ? getTrain("hard") : reject("NO_INTENSITY");
-                          resolve(values);
-                      })
+                      }
+
+                  } else if (attr === "train_start"){
+                      let train_obj = sess_obj.skill_object.train;
+                      train_obj.start_time = new Date().getTime();
+                      train_obj.round_start= train_obj.start_time;
+                      train_obj.finished_round = 0;
+                      /старт/i.test(req.command) ? values.push({train: train_obj}) : "";
+                  } else if (attr === "train_end"){
+                      let train_obj = sess_obj.skill_object.train;
+                      train_obj.end_time = new Date().getTime();
+                      train_obj.finished_round = 1;
+                      /старт/i.test(req.command) ? values.push({train: train_obj}) : "";
+                  } else if (attr === "pulse"){
+                      let pulse=-1, cnt = 0;
+                      req.nlu.entities.filter(item => {
+                          return item.type === "YANDEX.NUMBER"
+                      }).forEach(item => {
+                          pulse = parseInt(item.value);
+                          cnt++;
+                      });
+                      if (cnt === 1){
+                          if (pulse < 50 || pulse > 200) {
+                              reject("NOT_PULSE_INTERVAL");
+                          } else {
+                              values.push({pulse})
+                          }
+                      } else {
+                          reject("NO_PULSE");
+                      }
+                  } else if (attr === "height") {
+                      let height=-1, cnt = 0;
+                      req.nlu.entities.filter(item => {
+                          return item.type === "YANDEX.NUMBER"
+                      }).forEach(item => {
+                          height = parseInt(item.value);
+                          cnt++;
+                      });
+                      if (cnt === 1){
+                          if (parseInt(height) < 140 || parseInt(height) > 220) {
+                              reject("NOT_HEIGHT_INTERVAL");
+                          } else {
+                              values.push({height})
+                          }
+                      } else {
+                          reject("NO_HEIGHT");
+                      }
+                  }
+                  else if (attr === "weight"){
+                      let weight=-1, cnt = 0;
+                      req.nlu.entities.filter(item => {
+                          return item.type === "YANDEX.NUMBER"
+                      }).forEach(item => {
+                          weight = parseInt(item.value);
+                          cnt++;
+                      });
+                      if (cnt === 1){
+                          if (weight < 40 || weight > 150) {
+                              reject("NOT_WEIGHT_INTERVAL");
+                          } else {
+                              values.push({weight})
+                          }
+                      } else {
+                          reject("NO_WEIGHT");
+                      }
+                  } else if (attr === "not_like"){
+                      values.push({not_like:req.command})
+                  } else if (attr === "goals"){
+                      values.push({goals:req.command})
+                  } else if (attr === "fact_obj"){
+                      return db.setObjByTrainNum(sess_obj.skill_object.train_num, sess_obj).then().catch(err => reject("ERROR"));
                   }
               });
               if (!found) {
@@ -164,10 +284,13 @@ module.exports = function (app) {
             else if (imt > 35 &&  imt <= 40) return 5;
             else return 6;
         } else if (skill_id === "d3c624cc-2b82-4594-9a7a-33d8f60a5e59") {
-            if (obj.train && obj.train.end_time) {
-                return 1;
+            if (obj.train && obj.train_num && obj.train.end_time) {
+                return 2;       // индивидуальная тренировка - завершена полностью
+            }
+            else if (obj.train && obj.train.end_time) {
+                return 1;       // обычная тренировка - завершена полностью
             } else {
-                return 0;
+                return 0;       // обычная тренировка - не завершена
             }
         }
     }
@@ -221,7 +344,7 @@ module.exports = function (app) {
         }*/
         if (obj.train.finished_round && obj.train.active_round && obj.train.finished_round === obj.train.active_round) {
             let ex_time = Math.round((obj.train.end_time - obj.train.round_start)/1000);
-            desc = `${sample(['Вы выполнили круг', 'Вы прошли круг', 'Круг был пройден'])} за ${getDurationStr(ex_time)}. Отдохните одну минуту. ${sample(['Следующее упражнение','Далее','Идём дальше'])} - `;
+            desc = `Время прохождения круга ${getDurationStr(ex_time)}. Отдохните одну минуту. ${sample(['Следующее упражнение','Далее','Идём дальше'])} - `;
         } else {
             if (obj.train.last_ex_code) {
                 desc = `${sample(['Следующее упражнение','Далее'])} - `;
@@ -268,57 +391,82 @@ module.exports = function (app) {
         return buttons;
     }
 
-    const getNextHandler = (item, obj) => {
+    const getNextHandler = (item, obj, prev_id) => {
         let next_id = -1;
         let now = new Date().getTime();
         if (item.next_special) {
+            let skill_obj = obj.skill_object;
             if (item.next_special === "train_ex_start") {
-                if (!obj.train.last_ex_seq) {
-                    obj.train.round_start = now;
-                    if (!(obj.train.last_ex_seq === 0)) {
-                        obj.train.last_ex_seq = 0;
-                        obj.train.start_time = now;
-                        obj.train.fact = [];
-                        obj.train.active_round = 1;
-                        obj.train.finished_round = 0;
+                if (!skill_obj.train.last_ex_seq) {
+                    skill_obj.train.round_start = now;
+                    if (!(skill_obj.train.last_ex_seq === 0)) {
+                        skill_obj.train.last_ex_seq = 0;
+                        skill_obj.train.start_time = now;
+                        skill_obj.train.fact = [];
+                        skill_obj.train.active_round = 1;
+                        skill_obj.train.finished_round = 0;
                     }
                 }
-                if (obj.train.finished_round === obj.train.active_round) {
-                    obj.train.active_round++;
+                if (skill_obj.train.finished_round === skill_obj.train.active_round) {
+                    skill_obj.train.active_round++;
                 }
-                obj.train.last_ex_code = obj.train.plan.sort((a, b) => a.seq - b.seq)[obj.train.last_ex_seq]["name"];
-                obj.train.last_ex_start_time = now;
+                skill_obj.train.last_ex_code = skill_obj.train.plan.sort((a, b) => a.seq - b.seq)[skill_obj.train.last_ex_seq]["name"];
+                skill_obj.train.last_ex_start_time = now;
                 next_id = 8;
             } else if (item.next_special === "train_ex_end") {
-                obj.train.last_ex_seq = obj.train.last_ex_seq + 1;
-                obj.train.last_ex_end_time = now;
-                obj.train.end_time = now;
-                let secs = Math.round((obj.train.last_ex_end_time - obj.train.last_ex_start_time)/1000);
-                obj.train.fact.push({name : obj.train.last_ex_code, secs});
-                if (obj.train.last_ex_seq < obj.train.plan.length) {
+                skill_obj.train.last_ex_seq = skill_obj.train.last_ex_seq + 1;
+                skill_obj.train.last_ex_end_time = now;
+                skill_obj.train.end_time = now;
+                let secs = Math.round((skill_obj.train.last_ex_end_time - skill_obj.train.last_ex_start_time)/1000);
+                skill_obj.train.fact.push({name : skill_obj.train.last_ex_code, secs});
+                if (skill_obj.train.last_ex_seq < skill_obj.train.plan.length) {
                     next_id = 7;
                 }
                 else {
-                    obj.train.finished_round++;
-                    if (obj.train.finished_round === 4) {
+                    skill_obj.train.finished_round++;
+                    if (skill_obj.train.finished_round === 4) {
                         next_id = 5;
+                        if (skill_obj.train_num) {
+                            db.setObjByTrainNum(skill_obj.train_num, obj).then(() => {}).catch((err) => {});
+                        }
                     } else {
                         next_id = 7;
-                        obj.train.last_ex_seq = 0;
+                        skill_obj.train.last_ex_seq = 0;
                     }
                 }
+            }  else if (item.next_special === "back") {
+                next_id = obj.prev_sentence_id;
             }
         } else {
             next_id = item.next_id;
         }
         return next_id;
     }
-    const getNextId = (req, next_decl, obj, inp_next_id) => {
+    const getNextId = (req, next_decl, obj, inp_next_id, oth_handler) => {
         return new Promise((resolve, reject) => {
             if (inp_next_id) {
                 return resolve(inp_next_id);
             }
-
+            let next_id = -1;
+            /* 1. Пытаемся получить следующий шаг из массива next_decl БЕЗ похода в NLP */
+            next_decl.forEach(item => {
+                let matcher = new RegExp(item.name, "i");
+                if (matcher.test(req.command)) {
+                    next_id = getNextHandler(item, obj);
+                }
+            });
+            if (next_id === -1) {
+            /* 2. Проверим - может прописан other handler, и мы по нему проскочим */
+                if (oth_handler === "individual"){
+                    let trainNum = getTrainNum(req.nlu);
+                    if (trainNum > -1) {
+                        return db.getTrainByNum(trainNum).then(train => resolve(train.next_id)).catch(err => reject("NO_ANSWER"))
+                    }
+                }
+            } else {
+                resolve(next_id);
+            }
+            /* 3. Ну если ничего не помогло - идем в NLP */
             httpClient.post("https://sitepower-nlp.herokuapp.com", {data : req.command}).then(res => {
                 debug("{getNextId - NLP Response}", res.data)
                 if (res.data !== "NO_ANSWER") {
@@ -328,30 +476,18 @@ module.exports = function (app) {
                         if (matcher.test(res.data)) {
                             next_id = getNextHandler(item, obj);
                         }
-                    })
+                    });
                     if (next_id === -1) {
                         reject("NO_ANSWER");
                     } else {
                         resolve(next_id);
                     }
                 } else {
-                    reject("NO_ANSWER")
+                   reject("NO_ANSWER")
                 }
             }).catch(err => {
                 debug("{getNextId - NLP Response}", err.message)
-                let next_id = -1;
-                next_decl.forEach(item => {
-                    let matcher = new RegExp(item.name, "i");
-                    if (matcher.test(req.command)) {
-                        next_id = getNextHandler(item, obj);
-                    }
-                })
-                ;
-                if (next_id === -1) {
-                    reject("NO_ANSWER");
-                } else {
-                    resolve(next_id);
-                }
+                reject("NO_ANSWER");
             })
         })
     }
@@ -360,8 +496,6 @@ module.exports = function (app) {
         //req.command =
         return new Promise((resolve, reject) => {
             client.get("alice:" + session.session_id, (err, reply) => {
-
-
                 if (!reply){
                     let skill = session.skill_id;
                     return db.getAliceFirstSentence(skill).then(q => {
@@ -379,6 +513,9 @@ module.exports = function (app) {
 
                     if (session.skill_id === "d3c624cc-2b82-4594-9a7a-33d8f60a5e59" && /финиш/i.test(req.command)) {
                         return db.getAliceLastSentence(session.skill_id).then(q => {
+                            if (sess_obj.sentence_id !== q.id) {
+                                sess_obj.prev_sentence_id = sess_obj.sentence_id;
+                            }
                             sess_obj.sentence_id = q.id;
                             sess_obj.fail_num = 0;
                             setRedisValue(session.session_id, sess_obj);
@@ -409,17 +546,20 @@ module.exports = function (app) {
 
                                 resolve({sentence:q.sentence, last:false});
                             }
-                            return getValues(req, q.reply_attr, session.skill_id).then(values => {
+                            return getValues(req, q.reply_attr, session.skill_id, sess_obj).then(values => {
                                 values.forEach(item => sess_obj.skill_object[Object.keys(item)[0]] = Object.values(item)[0]);
                                 setRedisValue(session.session_id, sess_obj);
                                 /* переходим к следующему вопросу */
                                 /*if (!q.next_id) {
                                     q.next_id = getNextId(req, q.next_decl, sess_obj.skill_object);
                                 }*/
-                                return getNextId(req, q.next_decl, sess_obj.skill_object, q.next_id).then(res_next_id => {
+                                return getNextId(req, q.next_decl, sess_obj, q.next_id, q.next_decl_oth_handler).then(res_next_id => {
                                     q.next_id = res_next_id;
                                     console.log("next_id = " + q.next_id);
                                     return db.getAliceSentence(q.next_id).then(q => {
+                                        if (sess_obj.sentence_id !== q.id) {
+                                            sess_obj.prev_sentence_id = sess_obj.sentence_id;
+                                        }
                                         sess_obj.sentence_id = q.id;
                                         sess_obj.fail_num = 0;
                                         setRedisValue(session.session_id, sess_obj);

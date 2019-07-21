@@ -71,7 +71,11 @@ module.exports = {
     getAlicePingbySkill: getAlicePingbySkill,
     updateAlicePingbySkill: updateAlicePingbySkill,
     insertAlicePingbySkill: insertAlicePingbySkill,
-    getAliceLastSentence: getAliceLastSentence
+    getAliceLastSentence: getAliceLastSentence,
+    getTrainByNum: getTrainByNum,
+    setObjByTrainNum:setObjByTrainNum,
+    insertTrain:insertTrain,
+    getTrainsByUserId: getTrainsByUserId
 };
 
 function getUserByLogin(login) {
@@ -457,3 +461,29 @@ function getAliceLastSentence(skill_id) {
     return db.one(`select * from t_alice_sentence where skill_id = $1 and flag = 'E'`, skill_id);
 }
 
+function getTrainByNum(train_num) {
+    return db.one(`select t.*, u.name user_name
+                   from t_train_item t 
+                   join t_user u on t.user_id = u.id
+                   where train_num = $1`, train_num);
+}
+
+function setObjByTrainNum (num, obj) {
+    return db.none(`update t_train_item set fact_obj=$2, finish_dt = now(), status = 'COMPLETED' where train_num=$1`, [num, obj]);
+}
+
+function insertTrain(train_num, user_id, name, next_id, train_obj) {
+    return db.none(`insert into t_train_item(train_num, user_id, name, next_id, train_obj) values($1, $2, $3, $4, $5)`, [train_num, user_id, name, next_id, train_obj]);
+}
+
+function getTrainsByUserId(user_id, limit, before_id) {
+    return db.any(`
+		select
+            p.*
+        from t_train_item p
+        where p.user_id = $1
+        and p.id < $3
+        order by p.id desc
+        limit $2
+		`, [user_id, limit, before_id]);
+}

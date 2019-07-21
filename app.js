@@ -121,6 +121,7 @@ require('./api-oratorart')(app); // alice-api
 
  // Socket API
 require('./api-chat')(app, authMiddleware); // Chat API
+require('./api-fatcalc')(app, authMiddleware); // Fatcalc API
 
 require('./api-pay')(app, authMiddleware); // Pay API
 
