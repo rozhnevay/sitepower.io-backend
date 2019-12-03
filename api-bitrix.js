@@ -15,7 +15,7 @@ module.exports = function (app) {
             from: process.env.SMTP_LOGIN,
             to: "rozhnevay@gmail.com",
             subject: 'Bitrix Test',
-            html: JSON.stringify(req)
+            html: req.toString()
         };
 
         transporter.sendMail(mailOptions, function(error, info){
