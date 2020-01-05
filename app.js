@@ -118,6 +118,7 @@ require('./api-upload')(app, authMiddleware); // Upload
 require('./api-vk')(app, authMiddleware); // vk-api
 require('./api-alice')(app, authMiddleware); // alice-api
 require('./api-oratorart')(app); // alice-api
+require('./api-govoranet')(app); // alice-api
 require('./api-bitrix')(app); // alice-api
 
  // Socket API
