@@ -5,7 +5,7 @@ const db = require('./queries');
 module.exports = function (app) {
 
     const save = (req) => {
-        db.createRequestLog(req);
+        db.createRequestLog(JSON.stringify(req));
     }
 
     app.post("/api/mango/events/call", (req, res) => {
