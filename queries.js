@@ -260,11 +260,11 @@ function createProspect(user_id, name, form_id) {
 }
 
 function createRequestLog(request) {
-    return db.one('insert into t_request_log (request) values($1)', [request]);
+    return db.none('insert into t_request_log (request) values($1)', [request]);
 }
 
 function createVkProspect(user_id, vk_from_id, name, form_id) {
-    return db.none('insert into t_prospect (user_id, full_name, form_id, vk_from_id, region) values($1, $3, $4, $2, "") returning sitepower_id', [user_id, vk_from_id, name, form_id]);
+    return db.one('insert into t_prospect (user_id, full_name, form_id, vk_from_id, region) values($1, $3, $4, $2, "") returning sitepower_id', [user_id, vk_from_id, name, form_id]);
 }
 
 function getVkProspect(vk_from_id, form_id) {
