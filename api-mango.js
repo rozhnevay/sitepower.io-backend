@@ -9,12 +9,12 @@ module.exports = function (app) {
     }
 
     app.post("/api/mango/events/call", (req, res) => {
-        save(req);
+        save(req.body);
         res.send("OK");
     });
 
     app.post("/api/mango/events/summary", (req, res) => {
-        save(req);
+        save(req.body);
         res.send("OK");
     });
 }
