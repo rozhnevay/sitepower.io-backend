@@ -120,6 +120,7 @@ require('./api-alice')(app, authMiddleware); // alice-api
 require('./api-oratorart')(app); // alice-api
 require('./api-govoranet')(app); // alice-api
 require('./api-bitrix')(app); // alice-api
+require('./api-mango')(app); // alice-api
 
  // Socket API
 require('./api-chat')(app, authMiddleware); // Chat API
