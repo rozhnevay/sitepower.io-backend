@@ -75,7 +75,8 @@ module.exports = {
     getTrainByNum: getTrainByNum,
     setObjByTrainNum:setObjByTrainNum,
     insertTrain:insertTrain,
-    getTrainsByUserId: getTrainsByUserId
+    getTrainsByUserId: getTrainsByUserId,
+    createRequestLog: createRequestLog
 };
 
 function getUserByLogin(login) {
@@ -252,6 +253,10 @@ function getUserBySPId(sitepower_id) {
 
 function createProspect(user_id, name, form_id) {
     return db.one('insert into t_prospect (user_id, full_name, form_id) values($1, $2, $3) returning sitepower_id', [user_id, name, form_id]);
+}
+
+function createRequestLog(request) {
+    return db.one('insert into t_request_log (request) values($1)', [request]);
 }
 
 function createVkProspect(user_id, vk_from_id, name, form_id) {
