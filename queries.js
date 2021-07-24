@@ -9,7 +9,11 @@ var pgp = require('pg-promise')(options);
 require('dotenv').config()
 var connectionString = process.env.DATABASE_URL;
 
-var db = pgp({connectionString});
+var db = pgp({
+    connectionString,
+    ssl: {
+        rejectUnauthorized: false
+    }});
 
 module.exports = {
     getUserByLogin: getUserByLogin,
