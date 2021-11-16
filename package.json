@@ -10,7 +10,7 @@
     "npm": "6.7.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.436.0",
+    "aws-sdk": "^2.814.0",
     "axios": "^0.18.0",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.3",
