@@ -19,7 +19,7 @@ module.exports = function (app) {
     });
 
     app.post("/api/mango/events/recording", (req, res) => {
-        console.log(JSON.stringify(req));
+        console.log(req.body);
         res.send("OK");
     });
 }

@@ -1,3 +1,14 @@
+Собирать на сервере!!!
+cd ~/sitepower.io-backend
+git pull
+docker build -t app .
+cd ..
+docker-compose up -d
+
+
+
+
+
 # sitepower.io-backend
 **Chat for site as a service platform.**
 
