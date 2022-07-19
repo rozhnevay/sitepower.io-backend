@@ -9,16 +9,19 @@ module.exports = function (app) {
     }
 
     app.post("/api/mango/events/call", (req, res) => {
-        save(req.body);
+        console.log("!!! CALL !!!");``
+        console.log(req.body);
         res.send("OK");
     });
 
     app.post("/api/mango/events/summary", (req, res) => {
-        save(req.body);
+        console.log("!!! SUMMARY !!!");``
+        console.log(req.body);
         res.send("OK");
     });
 
     app.post("/api/mango/events/recording", (req, res) => {
+        console.log("!!! RECORDING !!!");``
         console.log(req.body);
         res.send("OK");
     });
