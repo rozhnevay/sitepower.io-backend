@@ -9,25 +9,25 @@ module.exports = function (app) {
 
     app.post("/api/uiscom/events/call/waiting", (req, res) => {
         console.log("!!! waiting !!!");
-        console.log(JSON.parse(req.body));
+        console.log(req.body);
         res.send("OK");
     });
 
     app.post("/api/uiscom/events/call/connected", (req, res) => {
         console.log("!!! connected !!!");
-        console.log(JSON.parse(req.body));
+        console.log(req.body);
         res.send("OK");
     });
 
     app.post("/api/uiscom/events/call/disconnected", (req, res) => {
         console.log("!!! disconnected !!!");
-        console.log(JSON.parse(req.body));
+        console.log(req.body);
         res.send("OK");
     });
 
     app.post("/api/uiscom/events/call/missed", (req, res) => {
         console.log("!!! missed !!!");
-        console.log(JSON.parse(req.body));
+        console.log(req.body);
         res.send("OK");
     });
 
