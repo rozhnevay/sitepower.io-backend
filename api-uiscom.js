@@ -8,26 +8,26 @@ module.exports = function (app) {
     }
 
     app.post("/api/mango/events/call/waiting", (req, res) => {
-        console.log("!!! waiting !!!");``
-        console.log(req.body);
+        console.log("!!! waiting !!!");
+        console.log(JSON.parse(req.body));
         res.send("OK");
     });
 
     app.post("/api/mango/events/call/connected", (req, res) => {
-        console.log("!!! connected !!!");``
-        console.log(req.body);
+        console.log("!!! connected !!!");
+        console.log(JSON.parse(req.body));
         res.send("OK");
     });
 
     app.post("/api/mango/events/call/disconnected", (req, res) => {
-        console.log("!!! disconnected !!!");``
-        console.log(req.body);
+        console.log("!!! disconnected !!!");
+        console.log(JSON.parse(req.body));
         res.send("OK");
     });
 
     app.post("/api/mango/events/call/missed", (req, res) => {
-        console.log("!!! missed !!!");``
-        console.log(req.body);
+        console.log("!!! missed !!!");
+        console.log(JSON.parse(req.body));
         res.send("OK");
     });
 
