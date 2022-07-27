@@ -20,13 +20,13 @@ module.exports = function (app) {
     });
 
     app.post("/api/mango/events/call/disconnected", (req, res) => {
-        console.log("!!! connected !!!");``
+        console.log("!!! disconnected !!!");``
         console.log(req.body);
         res.send("OK");
     });
 
     app.post("/api/mango/events/call/missed", (req, res) => {
-        console.log("!!! connected !!!");``
+        console.log("!!! missed !!!");``
         console.log(req.body);
         res.send("OK");
     });
